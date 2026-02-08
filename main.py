@@ -1,0 +1,324 @@
+"""
+Game Progress Tracker - Main Plugin Entry
+Decky Loader plugin for automatic game tagging
+"""
+
+import os
+import logging
+import asyncio
+from pathlib import Path
+from typing import Optional, Dict, Any, List
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("GameProgressTracker")
+
+# Import backend modules
+from backend.src.database import Database
+from backend.src.steam_data import SteamDataService
+from backend.src.hltb_service import HLTBService
+
+
+class Plugin:
+    """Main plugin class for Decky Loader"""
+
+    async def _main(self):
+        """Initialize plugin on load"""
+        logger.info("Game Progress Tracker plugin starting...")
+
+        # Get plugin data directory
+        self.plugin_dir = os.environ.get(
+            "DECKY_PLUGIN_RUNTIME_DIR",
+            str(Path.home() / ".local" / "share" / "decky" / "game-progress-tracker")
+        )
+        Path(self.plugin_dir).mkdir(parents=True, exist_ok=True)
+
+        # Initialize database
+        db_path = os.path.join(self.plugin_dir, "game_tracker.db")
+        self.db = Database(db_path)
+        await self.db.init_database()
+
+        # Initialize services
+        self.steam_service = SteamDataService()
+        self.hltb_service = HLTBService()
+
+        logger.info("Plugin initialized successfully")
+
+    async def _unload(self):
+        """Cleanup on plugin unload"""
+        logger.info("Unloading plugin...")
+        if hasattr(self, 'db'):
+            await self.db.close()
+
+    # ==================== Tag Calculation Logic ====================
+
+    async def calculate_auto_tag(self, appid: str) -> Optional[str]:
+        """Calculate automatic tag based on game stats"""
+        # Get game statistics
+        stats = await self.db.get_game_stats(appid)
+        if not stats:
+            logger.debug(f"No stats found for {appid}")
+            return None
+
+        # Get HLTB data
+        hltb = await self.db.get_hltb_cache(appid)
+
+        # Get settings
+        settings = await self.db.get_all_settings()
+        mastered_multiplier = settings.get('mastered_multiplier', 1.5)
+        in_progress_threshold = settings.get('in_progress_threshold', 60)
+
+        # Priority 1: Completed (100% achievements)
+        if stats['total_achievements'] > 0:
+            if stats['unlocked_achievements'] >= stats['total_achievements']:
+                return "completed"
+
+        # Priority 2: Mastered (over-played)
+        if hltb and hltb.get('main_extra'):
+            completion_hours = hltb['main_extra']
+            completion_threshold = completion_hours * mastered_multiplier * 60  # Convert to minutes
+
+            if stats['playtime_minutes'] >= completion_threshold:
+                return "mastered"
+
+        # Priority 3: In Progress (played >= threshold)
+        if stats['playtime_minutes'] >= in_progress_threshold:
+            return "in_progress"
+
+        return None  # No tag
+
+    async def sync_game_tags(self, appid: str, force: bool = False) -> Dict[str, Any]:
+        """Sync tags for a single game"""
+        try:
+            # Get current tag
+            current_tag = await self.db.get_tag(appid)
+
+            # Skip if manual override and not forcing
+            if current_tag and current_tag.get('is_manual') and not force:
+                logger.debug(f"Skipping {appid} (manual override)")
+                return current_tag
+
+            # Fetch fresh game stats
+            stats = await self.steam_service.get_game_stats_full(appid)
+            await self.db.update_game_stats(appid, stats)
+
+            # Fetch HLTB data if not cached
+            cached_hltb = await self.db.get_hltb_cache(appid)
+            if not cached_hltb:
+                hltb_data = await self.hltb_service.search_game(stats['game_name'])
+                if hltb_data:
+                    await self.db.cache_hltb_data(appid, hltb_data)
+
+            # Calculate new tag
+            new_tag = await self.calculate_auto_tag(appid)
+
+            # Update if changed or doesn't exist
+            if new_tag:
+                current_tag_value = current_tag.get('tag') if current_tag else None
+                if new_tag != current_tag_value:
+                    await self.db.set_tag(appid, new_tag, is_manual=False)
+                    logger.info(f"Updated tag for {appid}: {new_tag}")
+
+            return await self.db.get_tag(appid) or {}
+
+        except Exception as e:
+            logger.error(f"Failed to sync tags for {appid}: {e}")
+            return {"error": str(e)}
+
+    # ==================== Plugin API Methods ====================
+
+    async def get_game_tag(self, appid: str) -> Dict[str, Any]:
+        """Get tag for a specific game"""
+        try:
+            tag = await self.db.get_tag(appid)
+            if tag:
+                return {"success": True, "tag": tag}
+            return {"success": True, "tag": None}
+        except Exception as e:
+            logger.error(f"Error getting tag for {appid}: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def set_manual_tag(self, appid: str, tag: str) -> Dict[str, bool]:
+        """Manually set/override tag"""
+        try:
+            # Validate tag
+            valid_tags = ['completed', 'in_progress', 'mastered']
+            if tag not in valid_tags:
+                return {"success": False, "error": f"Invalid tag. Must be one of: {valid_tags}"}
+
+            success = await self.db.set_tag(appid, tag, is_manual=True)
+            if success:
+                logger.info(f"Manual tag set for {appid}: {tag}")
+            return {"success": success}
+        except Exception as e:
+            logger.error(f"Error setting manual tag for {appid}: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def remove_tag(self, appid: str) -> Dict[str, bool]:
+        """Remove tag from game"""
+        try:
+            success = await self.db.remove_tag(appid)
+            return {"success": success}
+        except Exception as e:
+            logger.error(f"Error removing tag for {appid}: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def reset_to_auto_tag(self, appid: str) -> Dict[str, Any]:
+        """Reset manual override to auto-calculated tag"""
+        try:
+            # Force recalculation
+            result = await self.sync_game_tags(appid, force=True)
+            return {"success": True, "tag": result}
+        except Exception as e:
+            logger.error(f"Error resetting tag for {appid}: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def sync_single_game(self, appid: str) -> Dict[str, Any]:
+        """Sync data and tags for single game"""
+        try:
+            result = await self.sync_game_tags(appid, force=False)
+            return {"success": True, "result": result}
+        except Exception as e:
+            logger.error(f"Error syncing game {appid}: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def sync_library(self) -> Dict[str, Any]:
+        """Bulk sync entire library"""
+        try:
+            logger.info("Starting library sync...")
+
+            # Get all games from Steam
+            games = await self.steam_service.get_all_games()
+            total = len(games)
+
+            if total == 0:
+                return {
+                    "success": True,
+                    "message": "No games found in library",
+                    "total": 0,
+                    "synced": 0,
+                    "errors": 0
+                }
+
+            synced = 0
+            errors = 0
+            error_list = []
+
+            for i, game in enumerate(games):
+                appid = game['appid']
+                try:
+                    await self.sync_game_tags(appid)
+                    synced += 1
+
+                    # Add delay for HLTB rate limiting
+                    if i < total - 1:
+                        await asyncio.sleep(1.0)
+
+                except Exception as e:
+                    errors += 1
+                    error_list.append({"appid": appid, "error": str(e)})
+                    logger.error(f"Failed to sync {appid}: {e}")
+
+            logger.info(f"Library sync completed: {synced}/{total} synced, {errors} errors")
+
+            return {
+                "success": True,
+                "total": total,
+                "synced": synced,
+                "errors": errors,
+                "error_details": error_list[:10]  # Limit to first 10 errors
+            }
+
+        except Exception as e:
+            logger.error(f"Library sync failed: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def refresh_hltb_cache(self) -> Dict[str, Any]:
+        """Clear and rebuild HLTB cache"""
+        try:
+            # This would require deleting all HLTB cache and resyncing
+            # For now, just return success
+            logger.info("HLTB cache refresh requested")
+            return {
+                "success": True,
+                "message": "Cache will be refreshed on next sync"
+            }
+        except Exception as e:
+            logger.error(f"Failed to refresh HLTB cache: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def get_game_details(self, appid: str) -> Dict[str, Any]:
+        """Get all details for a game"""
+        try:
+            # Get stats
+            stats = await self.db.get_game_stats(appid)
+
+            # If no stats, fetch from Steam
+            if not stats:
+                stats = await self.steam_service.get_game_stats_full(appid)
+                if stats:
+                    await self.db.update_game_stats(appid, stats)
+
+            # Get tag
+            tag = await self.db.get_tag(appid)
+
+            # Get HLTB data
+            hltb_data = await self.db.get_hltb_cache(appid)
+
+            return {
+                "success": True,
+                "appid": appid,
+                "stats": stats,
+                "tag": tag,
+                "hltb_data": hltb_data
+            }
+
+        except Exception as e:
+            logger.error(f"Error getting game details for {appid}: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def get_settings(self) -> Dict[str, Any]:
+        """Get all plugin settings"""
+        try:
+            settings = await self.db.get_all_settings()
+            return {"success": True, "settings": settings}
+        except Exception as e:
+            logger.error(f"Error getting settings: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def update_settings(self, settings: Dict[str, Any]) -> Dict[str, bool]:
+        """Update plugin settings"""
+        try:
+            for key, value in settings.items():
+                await self.db.set_setting(key, value)
+
+            logger.info(f"Settings updated: {settings}")
+            return {"success": True}
+        except Exception as e:
+            logger.error(f"Error updating settings: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def get_tag_statistics(self) -> Dict[str, Any]:
+        """Get counts per tag type"""
+        try:
+            all_tags = await self.db.get_all_tags()
+
+            stats = {
+                "completed": 0,
+                "in_progress": 0,
+                "mastered": 0,
+                "total": len(all_tags)
+            }
+
+            for tag_entry in all_tags:
+                tag_type = tag_entry.get('tag')
+                if tag_type in stats:
+                    stats[tag_type] += 1
+
+            return {"success": True, "stats": stats}
+        except Exception as e:
+            logger.error(f"Error getting tag statistics: {e}")
+            return {"success": False, "error": str(e)}

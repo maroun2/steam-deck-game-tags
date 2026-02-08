@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Progress Tracker - Decky Plugin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .install-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 30px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .install-url {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            word-break: break-all;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .copy-btn:active {
+            background: #4451b3;
+        }
+
+        .steps {
+            counter-reset: step-counter;
+        }
+
+        .step {
+            position: relative;
+            padding-left: 50px;
+            margin: 25px 0;
+        }
+
+        .step::before {
+            counter-increment: step-counter;
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .feature {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .feature-icon {
+            display: inline-block;
+            width: 24px;
+            margin-right: 10px;
+            font-size: 1.3em;
+        }
+
+        .github-link {
+            display: inline-block;
+            background: #24292e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        .github-link:hover {
+            background: #1a1f23;
+        }
+
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        h3 {
+            color: #764ba2;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Game Progress Tracker</h1>
+            <p class="tagline">Automatic game tagging for your Steam Deck library</p>
+        </header>
+
+        <div class="content">
+            <div class="success">
+                <strong>✅ Ready to install!</strong> This plugin automatically tags your Steam games based on achievements, playtime, and completion time.
+            </div>
+
+            <h2>Quick Install</h2>
+            <div class="install-section">
+                <h3>Install URL for Decky Loader</h3>
+                <div class="install-url" id="installUrl">
+                    https://github.com/maroun2/steam-deck-game-tags/releases/latest/download/game-progress-tracker-latest.zip
+                </div>
+                <button class="copy-btn" onclick="copyUrl()">📋 Copy URL</button>
+
+                <div class="steps">
+                    <div class="step">
+                        <strong>Enable Developer Mode</strong><br>
+                        Open Decky Loader settings → Enable "Developer Mode" under OTHER
+                    </div>
+                    <div class="step">
+                        <strong>Open Developer Tab</strong><br>
+                        Go to the new "Developer" tab in Decky settings
+                    </div>
+                    <div class="step">
+                        <strong>Install from URL</strong><br>
+                        Paste the URL above into "Install Plugin from URL" and click Install
+                    </div>
+                    <div class="step">
+                        <strong>Wait for Installation</strong><br>
+                        The plugin will download and install automatically
+                    </div>
+                    <div class="step">
+                        <strong>Sync Your Library</strong><br>
+                        Open the plugin settings and click "Sync Entire Library"
+                    </div>
+                </div>
+            </div>
+
+            <h2>✨ Features</h2>
+            <div class="feature">
+                <span class="feature-icon">🎯</span>
+                <strong>Automatic Tagging:</strong> Games are tagged as Completed, In Progress, or Mastered
+            </div>
+            <div class="feature">
+                <span class="feature-icon">⏱️</span>
+                <strong>HowLongToBeat Integration:</strong> Uses completion time data for accurate tagging
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🏆</span>
+                <strong>Achievement Tracking:</strong> Tracks 100% achievement completion
+            </div>
+            <div class="feature">
+                <span class="feature-icon">✏️</span>
+                <strong>Manual Override:</strong> Set any tag manually with visual indicators
+            </div>
+            <div class="feature">
+                <span class="feature-icon">📊</span>
+                <strong>Library Statistics:</strong> View counts for each tag category
+            </div>
+            <div class="feature">
+                <span class="feature-icon">⚙️</span>
+                <strong>Configurable Thresholds:</strong> Customize tag requirements to your preference
+            </div>
+
+            <h2>📋 Tag Definitions</h2>
+            <div class="feature">
+                <span class="feature-icon">🟢</span>
+                <strong>Completed:</strong> 100% of achievements unlocked
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🔵</span>
+                <strong>In Progress:</strong> Played for at least 1 hour (configurable)
+            </div>
+            <div class="feature">
+                <span class="feature-icon">🟣</span>
+                <strong>Mastered:</strong> Playtime exceeds 1.5× HowLongToBeat completion time (configurable)
+            </div>
+
+            <div class="warning">
+                <strong>⚠️ First Time Setup:</strong> After installation, open the plugin settings and click "Sync Entire Library". This may take 5-30 minutes depending on your library size. The plugin respects HLTB rate limits (1 request/second).
+            </div>
+
+            <h2>🔧 Requirements</h2>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li>Steam Deck with Decky Loader installed</li>
+                <li>Internet connection (for HowLongToBeat data)</li>
+                <li>Developer Mode enabled in Decky</li>
+            </ul>
+
+            <h2>📖 Documentation</h2>
+            <p>For more information, troubleshooting, and support:</p>
+            <a href="https://github.com/maroun2/steam-deck-game-tags" class="github-link" target="_blank">
+                📚 View on GitHub
+            </a>
+
+            <h2>🐛 Report Issues</h2>
+            <p>Found a bug or have a feature request?</p>
+            <a href="https://github.com/maroun2/steam-deck-game-tags/issues" class="github-link" target="_blank">
+                🐛 Report an Issue
+            </a>
+        </div>
+
+        <footer>
+            <p>Made with ❤️ for the Steam Deck community</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">
+                <a href="https://github.com/maroun2/steam-deck-game-tags" style="color: #667eea; text-decoration: none;">GitHub</a> •
+                <a href="https://github.com/maroun2/steam-deck-game-tags/releases" style="color: #667eea; text-decoration: none;">Releases</a> •
+                <a href="https://github.com/maroun2/steam-deck-game-tags/blob/main/README.md" style="color: #667eea; text-decoration: none;">Documentation</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        function copyUrl() {
+            const urlElement = document.getElementById('installUrl');
+            const url = urlElement.textContent;
+
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                btn.style.background = '#28a745';
+
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '#667eea';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
