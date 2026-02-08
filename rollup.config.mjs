@@ -18,13 +18,12 @@ export default {
     externalGlobals({
       react: 'SP_REACT',
       'react-dom': 'SP_REACTDOM',
-      '@decky/ui': 'DFL',
-      '@decky/api': 'DeckyAPI'
+      '@decky/ui': 'DFL'
     }),
     replace({
       preventAssignment: false,
       'process.env.NODE_ENV': JSON.stringify('production')
     })
   ],
-  external: ['react', 'react-dom', '@decky/ui', '@decky/api']
+  external: ['react', 'react-dom', '@decky/ui']
 };
