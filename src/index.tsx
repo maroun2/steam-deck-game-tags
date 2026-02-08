@@ -3,7 +3,7 @@
  * Decky Loader plugin for automatic game tagging
  */
 
-import { definePlugin, ServerAPI, staticClasses } from 'decky-frontend-lib';
+import { ServerAPI, staticClasses } from 'decky-frontend-lib';
 import React, { ReactElement, VFC, useState } from 'react';
 import { GameTag } from './components/GameTag';
 import { TagManager } from './components/TagManager';
@@ -47,7 +47,7 @@ const GamePageOverlay: VFC<{ serverAPI: ServerAPI; appid: string }> = ({ serverA
 /**
  * Main Plugin Definition
  */
-export default definePlugin((serverAPI: ServerAPI) => {
+export default function (serverAPI: ServerAPI) {
   let gamePagePatch: any;
 
   // Patch the game library page to inject our tag component
@@ -88,4 +88,4 @@ export default definePlugin((serverAPI: ServerAPI) => {
       serverAPI.routerHook.removePatch(gamePagePatch);
     }
   };
-});
+}

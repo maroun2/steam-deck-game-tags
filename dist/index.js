@@ -683,7 +683,7 @@ var GameProgressTracker = (function (deckyFrontendLib, React) {
     /**
      * Main Plugin Definition
      */
-    var index = deckyFrontendLib.definePlugin((serverAPI) => {
+    function index (serverAPI) {
         let gamePagePatch;
         // Patch the game library page to inject our tag component
         gamePagePatch = serverAPI.routerHook.addPatch('/library/app/:appId', (props) => {
@@ -705,7 +705,7 @@ var GameProgressTracker = (function (deckyFrontendLib, React) {
                 serverAPI.routerHook.removePatch(gamePagePatch);
             }
         };
-    });
+    }
 
     return index;
 
