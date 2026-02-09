@@ -3,16 +3,16 @@
  * Modal for managing game tags manually
  */
 
-import React, { VFC, useState, useEffect } from 'react';
-import { ServerAPI, GameDetails } from '../types';
+import React, { FC, useState, useEffect } from 'react';
+import { call } from '@decky/api';
+import { GameDetails } from '../types';
 
 interface TagManagerProps {
-  serverAPI: ServerAPI;
   appid: string;
   onClose: () => void;
 }
 
-export const TagManager: VFC<TagManagerProps> = ({ serverAPI, appid, onClose }) => {
+export const TagManager: FC<TagManagerProps> = ({ appid, onClose }) => {
   const [details, setDetails] = useState<GameDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +26,8 @@ export const TagManager: VFC<TagManagerProps> = ({ serverAPI, appid, onClose }) 
       setLoading(true);
       setError(null);
 
-      const response = await serverAPI.callPluginMethod<GameDetails>('get_game_details', {
-        appid: appid
-      });
-
-      setDetails(response.result);
+      const result = await call<[{ appid: string }], GameDetails>('get_game_details', { appid });
+      setDetails(result);
     } catch (err: any) {
       setError(err?.message || 'Failed to load game details');
       console.error('Error fetching game details:', err);
@@ -41,10 +38,7 @@ export const TagManager: VFC<TagManagerProps> = ({ serverAPI, appid, onClose }) 
 
   const setTag = async (tag: string) => {
     try {
-      await serverAPI.callPluginMethod('set_manual_tag', {
-        appid: appid,
-        tag: tag
-      });
+      await call<[{ appid: string; tag: string }], void>('set_manual_tag', { appid, tag });
       await fetchDetails();
     } catch (err: any) {
       setError(err?.message || 'Failed to set tag');
@@ -54,9 +48,7 @@ export const TagManager: VFC<TagManagerProps> = ({ serverAPI, appid, onClose }) 
 
   const resetToAuto = async () => {
     try {
-      await serverAPI.callPluginMethod('reset_to_auto_tag', {
-        appid: appid
-      });
+      await call<[{ appid: string }], void>('reset_to_auto_tag', { appid });
       await fetchDetails();
     } catch (err: any) {
       setError(err?.message || 'Failed to reset tag');
@@ -66,9 +58,7 @@ export const TagManager: VFC<TagManagerProps> = ({ serverAPI, appid, onClose }) 
 
   const removeTag = async () => {
     try {
-      await serverAPI.callPluginMethod('remove_tag', {
-        appid: appid
-      });
+      await call<[{ appid: string }], void>('remove_tag', { appid });
       await fetchDetails();
     } catch (err: any) {
       setError(err?.message || 'Failed to remove tag');

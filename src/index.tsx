@@ -4,8 +4,8 @@
  */
 
 import { staticClasses } from '@decky/ui';
-import { definePlugin, ServerAPI } from '@decky/api';
-import React, { ReactElement, VFC, useState } from 'react';
+import { definePlugin, routerHook } from '@decky/api';
+import { ReactElement, useState, FC } from 'react';
 import { GameTag } from './components/GameTag';
 import { TagManager } from './components/TagManager';
 import { Settings } from './components/Settings';
@@ -23,8 +23,8 @@ function extractAppId(path: string): string | null {
  * Game Page Overlay Component
  * Displays tag badge and manages tag editor
  */
-const GamePageOverlay: VFC<{ serverAPI: ServerAPI; appid: string }> = ({ serverAPI, appid }) => {
-  const { tag, loading } = useGameTag(serverAPI, appid);
+const GamePageOverlay: FC<{ appid: string }> = ({ appid }) => {
+  const { tag, loading } = useGameTag(appid);
   const [showManager, setShowManager] = useState(false);
 
   if (loading || !tag) {
@@ -36,7 +36,6 @@ const GamePageOverlay: VFC<{ serverAPI: ServerAPI; appid: string }> = ({ serverA
       <GameTag tag={tag} onClick={() => setShowManager(true)} />
       {showManager && (
         <TagManager
-          serverAPI={serverAPI}
           appid={appid}
           onClose={() => setShowManager(false)}
         />
@@ -48,11 +47,9 @@ const GamePageOverlay: VFC<{ serverAPI: ServerAPI; appid: string }> = ({ serverA
 /**
  * Main Plugin Definition
  */
-export default definePlugin((serverAPI: ServerAPI) => {
-  let gamePagePatch: any;
-
+export default definePlugin(() => {
   // Patch the game library page to inject our tag component
-  gamePagePatch = serverAPI.routerHook.addPatch(
+  const gamePagePatch = routerHook.addPatch(
     '/library/app/:appId',
     (props: { path: string; children: ReactElement }) => {
       const appid = extractAppId(props.path);
@@ -61,7 +58,7 @@ export default definePlugin((serverAPI: ServerAPI) => {
         return (
           <>
             {props.children}
-            <GamePageOverlay serverAPI={serverAPI} appid={appid} />
+            <GamePageOverlay appid={appid} />
           </>
         );
       }
@@ -73,7 +70,7 @@ export default definePlugin((serverAPI: ServerAPI) => {
   return {
     name: 'Game Progress Tracker',
     titleView: <div className={staticClasses.Title}>Game Progress Tracker</div>,
-    content: <Settings serverAPI={serverAPI} />,
+    content: <Settings />,
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -87,7 +84,7 @@ export default definePlugin((serverAPI: ServerAPI) => {
     ),
     onDismount() {
       // Clean up patches when plugin is unloaded
-      serverAPI.routerHook.removePatch(gamePagePatch);
+      routerHook.removePatch('/library/app/:appId', gamePagePatch);
     }
   };
 });

@@ -1,4 +1,4 @@
-const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.0.9","flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.0.10","flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -18,6 +18,8 @@ catch {
 if (api._version != API_VERSION) {
     console.warn(`[@decky/api] Requested API version ${API_VERSION} but the running loader only supports version ${api._version}. Some features may not work.`);
 }
+const call = api.call;
+const routerHook = api.routerHook;
 const definePlugin = (fn) => {
     return (...args) => {
         return fn(...args);
@@ -80,8 +82,7 @@ const GameTag = ({ tag, onClick }) => {
  * TagManager Component
  * Modal for managing game tags manually
  */
-
-const TagManager = ({ serverAPI, appid, onClose }) => {
+const TagManager = ({ appid, onClose }) => {
     const [details, setDetails] = SP_REACT.useState(null);
     const [loading, setLoading] = SP_REACT.useState(true);
     const [error, setError] = SP_REACT.useState(null);
@@ -92,10 +93,8 @@ const TagManager = ({ serverAPI, appid, onClose }) => {
         try {
             setLoading(true);
             setError(null);
-            const response = await serverAPI.callPluginMethod('get_game_details', {
-                appid: appid
-            });
-            setDetails(response.result);
+            const result = await call('get_game_details', { appid });
+            setDetails(result);
         }
         catch (err) {
             setError(err?.message || 'Failed to load game details');
@@ -107,10 +106,7 @@ const TagManager = ({ serverAPI, appid, onClose }) => {
     };
     const setTag = async (tag) => {
         try {
-            await serverAPI.callPluginMethod('set_manual_tag', {
-                appid: appid,
-                tag: tag
-            });
+            await call('set_manual_tag', { appid, tag });
             await fetchDetails();
         }
         catch (err) {
@@ -120,9 +116,7 @@ const TagManager = ({ serverAPI, appid, onClose }) => {
     };
     const resetToAuto = async () => {
         try {
-            await serverAPI.callPluginMethod('reset_to_auto_tag', {
-                appid: appid
-            });
+            await call('reset_to_auto_tag', { appid });
             await fetchDetails();
         }
         catch (err) {
@@ -132,9 +126,7 @@ const TagManager = ({ serverAPI, appid, onClose }) => {
     };
     const removeTag = async () => {
         try {
-            await serverAPI.callPluginMethod('remove_tag', {
-                appid: appid
-            });
+            await call('remove_tag', { appid });
             await fetchDetails();
         }
         catch (err) {
@@ -320,8 +312,7 @@ const styles$1 = {
  * Settings Component
  * Plugin settings and configuration panel
  */
-
-const Settings = ({ serverAPI }) => {
+const Settings = () => {
     const [settings, setSettings] = SP_REACT.useState({
         auto_tag_enabled: true,
         mastered_multiplier: 1.5,
@@ -338,9 +329,9 @@ const Settings = ({ serverAPI }) => {
     }, []);
     const loadSettings = async () => {
         try {
-            const response = await serverAPI.callPluginMethod('get_settings', {});
-            if (response.result.settings) {
-                setSettings(response.result.settings);
+            const result = await call('get_settings');
+            if (result.settings) {
+                setSettings(result.settings);
             }
         }
         catch (err) {
@@ -349,9 +340,9 @@ const Settings = ({ serverAPI }) => {
     };
     const loadStats = async () => {
         try {
-            const response = await serverAPI.callPluginMethod('get_tag_statistics', {});
-            if (response.result.stats) {
-                setStats(response.result.stats);
+            const result = await call('get_tag_statistics');
+            if (result.stats) {
+                setStats(result.stats);
             }
         }
         catch (err) {
@@ -362,9 +353,7 @@ const Settings = ({ serverAPI }) => {
         const newSettings = { ...settings, [key]: value };
         setSettings(newSettings);
         try {
-            await serverAPI.callPluginMethod('update_settings', {
-                settings: newSettings
-            });
+            await call('update_settings', { settings: newSettings });
             showMessage('Settings saved');
         }
         catch (err) {
@@ -376,8 +365,7 @@ const Settings = ({ serverAPI }) => {
         try {
             setSyncing(true);
             setMessage('Syncing library... This may take several minutes.');
-            const response = await serverAPI.callPluginMethod('sync_library', {});
-            const result = response.result;
+            const result = await call('sync_library');
             if (result.success) {
                 showMessage(`Sync complete! ${result.synced}/${result.total} games synced. ` +
                     (result.errors ? `${result.errors} errors.` : ''));
@@ -398,7 +386,7 @@ const Settings = ({ serverAPI }) => {
     const refreshCache = async () => {
         try {
             setLoading(true);
-            await serverAPI.callPluginMethod('refresh_hltb_cache', {});
+            await call('refresh_hltb_cache');
             showMessage('Cache will be refreshed on next sync');
         }
         catch (err) {
@@ -463,7 +451,7 @@ const Settings = ({ serverAPI }) => {
             SP_REACT.createElement("div", { style: styles.about },
                 SP_REACT.createElement("p", null,
                     "Game Progress Tracker v",
-                    "1.0.9"),
+                    "1.0.10"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };
@@ -589,8 +577,7 @@ const styles = {
 /**
  * React hook for managing game tags
  */
-
-function useGameTag(serverAPI, appid) {
+function useGameTag(appid) {
     const [tag, setTag] = SP_REACT.useState(null);
     const [loading, setLoading] = SP_REACT.useState(true);
     const [error, setError] = SP_REACT.useState(null);
@@ -601,10 +588,8 @@ function useGameTag(serverAPI, appid) {
         try {
             setLoading(true);
             setError(null);
-            const response = await serverAPI.callPluginMethod('get_game_tag', {
-                appid: appid
-            });
-            setTag(response.result.tag);
+            const result = await call('get_game_tag', { appid });
+            setTag(result.tag);
         }
         catch (err) {
             setError(err?.message || 'Failed to fetch tag');
@@ -617,15 +602,12 @@ function useGameTag(serverAPI, appid) {
     const setManualTag = async (newTag) => {
         try {
             setError(null);
-            const response = await serverAPI.callPluginMethod('set_manual_tag', {
-                appid: appid,
-                tag: newTag
-            });
-            if (response.result.success) {
+            const result = await call('set_manual_tag', { appid, tag: newTag });
+            if (result.success) {
                 await fetchTag();
             }
             else {
-                setError(response.result.error || 'Failed to set tag');
+                setError(result.error || 'Failed to set tag');
             }
         }
         catch (err) {
@@ -636,14 +618,12 @@ function useGameTag(serverAPI, appid) {
     const removeTag = async () => {
         try {
             setError(null);
-            const response = await serverAPI.callPluginMethod('remove_tag', {
-                appid: appid
-            });
-            if (response.result.success) {
+            const result = await call('remove_tag', { appid });
+            if (result.success) {
                 await fetchTag();
             }
             else {
-                setError(response.result.error || 'Failed to remove tag');
+                setError(result.error || 'Failed to remove tag');
             }
         }
         catch (err) {
@@ -654,14 +634,12 @@ function useGameTag(serverAPI, appid) {
     const resetToAuto = async () => {
         try {
             setError(null);
-            const response = await serverAPI.callPluginMethod('reset_to_auto_tag', {
-                appid: appid
-            });
-            if (response.result.success) {
+            const result = await call('reset_to_auto_tag', { appid });
+            if (result.success) {
                 await fetchTag();
             }
             else {
-                setError(response.result.error || 'Failed to reset tag');
+                setError(result.error || 'Failed to reset tag');
             }
         }
         catch (err) {
@@ -695,40 +673,39 @@ function extractAppId(path) {
  * Game Page Overlay Component
  * Displays tag badge and manages tag editor
  */
-const GamePageOverlay = ({ serverAPI, appid }) => {
-    const { tag, loading } = useGameTag(serverAPI, appid);
+const GamePageOverlay = ({ appid }) => {
+    const { tag, loading } = useGameTag(appid);
     const [showManager, setShowManager] = SP_REACT.useState(false);
     if (loading || !tag) {
         return null;
     }
-    return (SP_REACT.createElement(SP_REACT.Fragment, null,
-        SP_REACT.createElement(GameTag, { tag: tag, onClick: () => setShowManager(true) }),
-        showManager && (SP_REACT.createElement(TagManager, { serverAPI: serverAPI, appid: appid, onClose: () => setShowManager(false) }))));
+    return (React.createElement(React.Fragment, null,
+        React.createElement(GameTag, { tag: tag, onClick: () => setShowManager(true) }),
+        showManager && (React.createElement(TagManager, { appid: appid, onClose: () => setShowManager(false) }))));
 };
 /**
  * Main Plugin Definition
  */
-var index = definePlugin((serverAPI) => {
-    let gamePagePatch;
+var index = definePlugin(() => {
     // Patch the game library page to inject our tag component
-    gamePagePatch = serverAPI.routerHook.addPatch('/library/app/:appId', (props) => {
+    const gamePagePatch = routerHook.addPatch('/library/app/:appId', (props) => {
         const appid = extractAppId(props.path);
         if (appid) {
-            return (SP_REACT.createElement(SP_REACT.Fragment, null,
+            return (React.createElement(React.Fragment, null,
                 props.children,
-                SP_REACT.createElement(GamePageOverlay, { serverAPI: serverAPI, appid: appid })));
+                React.createElement(GamePageOverlay, { appid: appid })));
         }
         return props.children;
     });
     return {
         name: 'Game Progress Tracker',
-        titleView: SP_REACT.createElement("div", { className: DFL.staticClasses.Title }, "Game Progress Tracker"),
-        content: SP_REACT.createElement(Settings, { serverAPI: serverAPI }),
-        icon: (SP_REACT.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", width: "24", height: "24" },
-            SP_REACT.createElement("path", { d: "M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.87 0-7-3.13-7-7V8.3l7-3.11 7 3.11V13c0 3.87-3.13 7-7 7zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z" }))),
+        titleView: React.createElement("div", { className: DFL.staticClasses.Title }, "Game Progress Tracker"),
+        content: React.createElement(Settings, null),
+        icon: (React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", width: "24", height: "24" },
+            React.createElement("path", { d: "M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.87 0-7-3.13-7-7V8.3l7-3.11 7 3.11V13c0 3.87-3.13 7-7 7zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z" }))),
         onDismount() {
             // Clean up patches when plugin is unloaded
-            serverAPI.routerHook.removePatch(gamePagePatch);
+            routerHook.removePatch('/library/app/:appId', gamePagePatch);
         }
     };
 });

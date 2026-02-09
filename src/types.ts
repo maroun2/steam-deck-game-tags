@@ -66,10 +66,3 @@ export interface SyncResult {
   error?: string;
 }
 
-export interface ServerAPI {
-  callPluginMethod<T = any>(method: string, args: Record<string, any>): Promise<{ result: T }>;
-  routerHook: {
-    addPatch(route: string, callback: (props: any) => any): any;
-    removePatch(patch: any): void;
-  };
-}

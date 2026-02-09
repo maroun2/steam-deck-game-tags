@@ -2,12 +2,10 @@
  * TagManager Component
  * Modal for managing game tags manually
  */
-import { VFC } from 'react';
-import { ServerAPI } from '../types';
+import { FC } from 'react';
 interface TagManagerProps {
-    serverAPI: ServerAPI;
     appid: string;
     onClose: () => void;
 }
-export declare const TagManager: VFC<TagManagerProps>;
+export declare const TagManager: FC<TagManagerProps>;
 export {};

@@ -3,9 +3,10 @@
  */
 
 import { useState, useEffect } from 'react';
-import { ServerAPI, GameTag } from '../types';
+import { call } from '@decky/api';
+import { GameTag } from '../types';
 
-export function useGameTag(serverAPI: ServerAPI, appid: string) {
+export function useGameTag(appid: string) {
   const [tag, setTag] = useState<GameTag | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,11 +20,8 @@ export function useGameTag(serverAPI: ServerAPI, appid: string) {
       setLoading(true);
       setError(null);
 
-      const response = await serverAPI.callPluginMethod<{ tag: GameTag }>('get_game_tag', {
-        appid: appid
-      });
-
-      setTag(response.result.tag);
+      const result = await call<[{ appid: string }], { tag: GameTag }>('get_game_tag', { appid });
+      setTag(result.tag);
     } catch (err: any) {
       setError(err?.message || 'Failed to fetch tag');
       console.error('Error fetching tag:', err);
@@ -36,15 +34,12 @@ export function useGameTag(serverAPI: ServerAPI, appid: string) {
     try {
       setError(null);
 
-      const response = await serverAPI.callPluginMethod('set_manual_tag', {
-        appid: appid,
-        tag: newTag
-      });
+      const result = await call<[{ appid: string; tag: string }], { success: boolean; error?: string }>('set_manual_tag', { appid, tag: newTag });
 
-      if (response.result.success) {
+      if (result.success) {
         await fetchTag();
       } else {
-        setError(response.result.error || 'Failed to set tag');
+        setError(result.error || 'Failed to set tag');
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to set tag');
@@ -56,14 +51,12 @@ export function useGameTag(serverAPI: ServerAPI, appid: string) {
     try {
       setError(null);
 
-      const response = await serverAPI.callPluginMethod('remove_tag', {
-        appid: appid
-      });
+      const result = await call<[{ appid: string }], { success: boolean; error?: string }>('remove_tag', { appid });
 
-      if (response.result.success) {
+      if (result.success) {
         await fetchTag();
       } else {
-        setError(response.result.error || 'Failed to remove tag');
+        setError(result.error || 'Failed to remove tag');
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to remove tag');
@@ -75,14 +68,12 @@ export function useGameTag(serverAPI: ServerAPI, appid: string) {
     try {
       setError(null);
 
-      const response = await serverAPI.callPluginMethod('reset_to_auto_tag', {
-        appid: appid
-      });
+      const result = await call<[{ appid: string }], { success: boolean; error?: string }>('reset_to_auto_tag', { appid });
 
-      if (response.result.success) {
+      if (result.success) {
         await fetchTag();
       } else {
-        setError(response.result.error || 'Failed to reset tag');
+        setError(result.error || 'Failed to reset tag');
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to reset tag');

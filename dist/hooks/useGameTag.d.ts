@@ -1,8 +1,8 @@
 /**
  * React hook for managing game tags
  */
-import { ServerAPI, GameTag } from '../types';
-export declare function useGameTag(serverAPI: ServerAPI, appid: string): {
+import { GameTag } from '../types';
+export declare function useGameTag(appid: string): {
     tag: GameTag | null;
     loading: boolean;
     error: string | null;

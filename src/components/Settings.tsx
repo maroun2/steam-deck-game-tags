@@ -3,14 +3,11 @@
  * Plugin settings and configuration panel
  */
 
-import React, { VFC, useState, useEffect } from 'react';
-import { ServerAPI, PluginSettings, SyncResult, TagStatistics } from '../types';
+import React, { FC, useState, useEffect } from 'react';
+import { call } from '@decky/api';
+import { PluginSettings, SyncResult, TagStatistics } from '../types';
 
-interface SettingsProps {
-  serverAPI: ServerAPI;
-}
-
-export const Settings: VFC<SettingsProps> = ({ serverAPI }) => {
+export const Settings: FC = () => {
   const [settings, setSettings] = useState<PluginSettings>({
     auto_tag_enabled: true,
     mastered_multiplier: 1.5,
@@ -29,9 +26,9 @@ export const Settings: VFC<SettingsProps> = ({ serverAPI }) => {
 
   const loadSettings = async () => {
     try {
-      const response = await serverAPI.callPluginMethod<{ settings: PluginSettings }>('get_settings', {});
-      if (response.result.settings) {
-        setSettings(response.result.settings);
+      const result = await call<[], { settings: PluginSettings }>('get_settings');
+      if (result.settings) {
+        setSettings(result.settings);
       }
     } catch (err) {
       console.error('Error loading settings:', err);
@@ -40,9 +37,9 @@ export const Settings: VFC<SettingsProps> = ({ serverAPI }) => {
 
   const loadStats = async () => {
     try {
-      const response = await serverAPI.callPluginMethod<{ stats: TagStatistics }>('get_tag_statistics', {});
-      if (response.result.stats) {
-        setStats(response.result.stats);
+      const result = await call<[], { stats: TagStatistics }>('get_tag_statistics');
+      if (result.stats) {
+        setStats(result.stats);
       }
     } catch (err) {
       console.error('Error loading stats:', err);
@@ -54,9 +51,7 @@ export const Settings: VFC<SettingsProps> = ({ serverAPI }) => {
     setSettings(newSettings);
 
     try {
-      await serverAPI.callPluginMethod('update_settings', {
-        settings: newSettings
-      });
+      await call<[{ settings: PluginSettings }], void>('update_settings', { settings: newSettings });
       showMessage('Settings saved');
     } catch (err) {
       console.error('Error updating settings:', err);
@@ -69,8 +64,7 @@ export const Settings: VFC<SettingsProps> = ({ serverAPI }) => {
       setSyncing(true);
       setMessage('Syncing library... This may take several minutes.');
 
-      const response = await serverAPI.callPluginMethod<SyncResult>('sync_library', {});
-      const result = response.result;
+      const result = await call<[], SyncResult>('sync_library');
 
       if (result.success) {
         showMessage(
@@ -92,7 +86,7 @@ export const Settings: VFC<SettingsProps> = ({ serverAPI }) => {
   const refreshCache = async () => {
     try {
       setLoading(true);
-      await serverAPI.callPluginMethod('refresh_hltb_cache', {});
+      await call<[], void>('refresh_hltb_cache');
       showMessage('Cache will be refreshed on next sync');
     } catch (err) {
       console.error('Error refreshing cache:', err);
