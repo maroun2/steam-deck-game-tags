@@ -3,23 +3,22 @@ Game Progress Tracker - Main Plugin Entry
 Decky Loader plugin for automatic game tagging
 """
 
-import sys
+# Standard library imports first
 import os
-from pathlib import Path
-
-# Add py_modules to path before any other imports
-# Use DECKY_PLUGIN_DIR env var (set by Decky before loading plugin)
-# Fall back to __file__ parent if env var not available
-PLUGIN_DIR = os.environ.get("DECKY_PLUGIN_DIR", str(Path(__file__).parent.resolve()))
-PY_MODULES = os.path.join(PLUGIN_DIR, "py_modules")
-if os.path.exists(PY_MODULES) and PY_MODULES not in sys.path:
-    sys.path.insert(0, PY_MODULES)
-
+import sys
 import asyncio
 from typing import Optional, Dict, Any, List
 
-# Use Decky's built-in logger for proper log integration
+# Import decky to get plugin directory path
 import decky
+
+# Add plugin directory and py_modules to path
+# This pattern is used by other working Decky plugins
+# See: https://github.com/wheaney/decky-XRGaming/blob/main/main.py
+# See: https://github.com/CameronRedmore/memory-deck/blob/main/main.py
+sys.path.insert(1, decky.DECKY_PLUGIN_DIR)
+sys.path.insert(1, os.path.join(decky.DECKY_PLUGIN_DIR, "py_modules"))
+
 logger = decky.logger
 
 # Now import backend modules (py_modules is in sys.path)
