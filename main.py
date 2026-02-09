@@ -13,13 +13,16 @@ from typing import Optional, Dict, Any, List
 # Import decky to get plugin directory path
 import decky
 
-# Add py_modules to path BEFORE importing custom modules
-# Pattern from: https://github.com/marissa999/decky-recorder/main/main.py
-PY_MODULES_PATH = Path(decky.DECKY_PLUGIN_DIR) / "py_modules"
-sys.path.append(str(PY_MODULES_PATH))
+# Add paths BEFORE importing custom modules
+# Decky extracts 'backend/' but NOT 'py_modules/' - so we put deps in backend/
+PLUGIN_DIR = Path(decky.DECKY_PLUGIN_DIR)
+BACKEND_PATH = PLUGIN_DIR / "backend"
+DEPS_PATH = BACKEND_PATH / "deps"
+sys.path.append(str(DEPS_PATH))
+sys.path.append(str(BACKEND_PATH / "src"))
 
 logger = decky.logger
-logger.info("=== Game Progress Tracker v1.0.27 starting ===")
+logger.info("=== Game Progress Tracker v1.0.28 starting ===")
 logger.info(f"Plugin dir: {decky.DECKY_PLUGIN_DIR}")
 logger.info(f"py_modules path: {PY_MODULES_PATH}")
 logger.info(f"py_modules exists: {PY_MODULES_PATH.exists()}")
@@ -39,11 +42,12 @@ if plugin_path.exists():
 
 logger.info(f"sys.path: {sys.path}")
 
-# Now import backend modules (py_modules is in sys.path)
+# Now import backend modules
 try:
     from database import Database
     from steam_data import SteamDataService
     from hltb_service import HLTBService
+    logger.info("Backend modules imported successfully")
 except ImportError as e:
     logger.error(f"Import failed: {e}")
     # Create dummy classes so plugin can at least load
