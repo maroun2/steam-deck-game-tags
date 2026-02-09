@@ -2,6 +2,9 @@
  * TypeScript type definitions for Game Progress Tracker
  */
 
+// Build-time injected constants
+declare const __PLUGIN_VERSION__: string;
+
 export interface GameTag {
   appid: string;
   tag: 'completed' | 'in_progress' | 'mastered' | null;

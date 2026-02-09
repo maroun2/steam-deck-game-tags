@@ -1,12 +1,4 @@
-'use strict';
-
-var _manifest = require('@decky/manifest');
-
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
-
-var _manifest__default = /*#__PURE__*/_interopDefaultLegacy(_manifest);
-
-const manifest = _manifest__default["default"];
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.0.8","flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -26,19 +18,6 @@ catch {
 if (api._version != API_VERSION) {
     console.warn(`[@decky/api] Requested API version ${API_VERSION} but the running loader only supports version ${api._version}. Some features may not work.`);
 }
-api.call;
-api.callable;
-api.addEventListener;
-api.removeEventListener;
-api.routerHook;
-api.toaster;
-api.openFilePicker;
-api.executeInTab;
-api.injectCssIntoTab;
-api.removeCssFromTab;
-api.fetchNoCors;
-api.getExternalResourceURL;
-api.useQuickAccessVisible;
 const definePlugin = (fn) => {
     return (...args) => {
         return fn(...args);
@@ -482,7 +461,9 @@ const Settings = ({ serverAPI }) => {
         SP_REACT.createElement("div", { style: styles.section },
             SP_REACT.createElement("h3", { style: styles.sectionTitle }, "About"),
             SP_REACT.createElement("div", { style: styles.about },
-                SP_REACT.createElement("p", null, "Game Progress Tracker v1.0.0"),
+                SP_REACT.createElement("p", null,
+                    "Game Progress Tracker v",
+                    "1.0.8"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };
@@ -752,4 +733,5 @@ var index = definePlugin((serverAPI) => {
     };
 });
 
-module.exports = index;
+export { index as default };
+//# sourceMappingURL=index.js.map

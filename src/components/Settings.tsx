@@ -227,7 +227,7 @@ export const Settings: VFC<SettingsProps> = ({ serverAPI }) => {
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>About</h3>
         <div style={styles.about}>
-          <p>Game Progress Tracker v1.0.0</p>
+          <p>Game Progress Tracker v{__PLUGIN_VERSION__}</p>
           <p>Automatic game tagging based on achievements, playtime, and completion time.</p>
           <p style={styles.smallText}>
             Data from HowLongToBeat • Steam achievement system

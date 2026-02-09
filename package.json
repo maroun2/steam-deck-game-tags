@@ -1,6 +1,6 @@
 {
   "name": "game-progress-tracker",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Game tagging plugin for Steam Deck",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",

@@ -1,29 +1,15 @@
-import typescript from '@rollup/plugin-typescript';
-import commonjs from '@rollup/plugin-commonjs';
-import { nodeResolve } from '@rollup/plugin-node-resolve';
-import replace from '@rollup/plugin-replace';
-import externalGlobals from 'rollup-plugin-external-globals';
+import deckyPlugin from "@decky/rollup";
+import replace from "@rollup/plugin-replace";
+import { readFileSync } from "fs";
 
-export default {
-  input: './src/index.tsx',
-  output: {
-    file: 'dist/index.js',
-    format: 'cjs',
-    exports: 'default'
-  },
+// Read version from package.json for injection into the build
+const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
+
+export default deckyPlugin({
   plugins: [
-    typescript(),
-    commonjs(),
-    nodeResolve({ browser: true }),
-    externalGlobals({
-      react: 'SP_REACT',
-      'react-dom': 'SP_REACTDOM',
-      '@decky/ui': 'DFL'
-    }),
     replace({
       preventAssignment: false,
-      'process.env.NODE_ENV': JSON.stringify('production')
+      __PLUGIN_VERSION__: JSON.stringify(pkg.version)
     })
-  ],
-  external: ['react', 'react-dom', '@decky/ui']
-};
+  ]
+});
