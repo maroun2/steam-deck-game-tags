@@ -18,7 +18,7 @@ PLUGIN_DIR = Path(decky.DECKY_PLUGIN_DIR)
 BACKEND_SRC = PLUGIN_DIR / "backend" / "src"
 
 logger = decky.logger
-logger.info("=== Game Progress Tracker v1.0.35 starting ===")
+logger.info("=== Game Progress Tracker v1.0.36 starting ===")
 logger.info(f"Plugin dir: {PLUGIN_DIR}")
 logger.info(f"Backend src: {BACKEND_SRC} exists={BACKEND_SRC.exists()}")
 
@@ -27,17 +27,12 @@ if BACKEND_SRC.exists() and str(BACKEND_SRC) not in sys.path:
     sys.path.insert(0, str(BACKEND_SRC))
     logger.info(f"Added to sys.path: {BACKEND_SRC}")
 
-# List contents of plugin directory to see what was actually extracted
-if PLUGIN_DIR.exists():
-    contents = list(PLUGIN_DIR.iterdir())
-    logger.info(f"Plugin directory contents: {[c.name for c in contents]}")
-    for item in contents:
-        if item.is_dir():
-            try:
-                sub_contents = list(item.iterdir())[:15]
-                logger.info(f"  {item.name}/ contains: {[c.name for c in sub_contents]}")
-            except:
-                pass
+# List contents of backend/src specifically
+if BACKEND_SRC.exists():
+    src_contents = list(BACKEND_SRC.iterdir())
+    logger.info(f"backend/src/ contains {len(src_contents)} items:")
+    for item in src_contents[:30]:
+        logger.info(f"  - {item.name}")
 
 logger.info(f"sys.path: {sys.path[:5]}...")  # First 5 entries
 
