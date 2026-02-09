@@ -13,20 +13,29 @@ from typing import Optional, Dict, Any, List
 # Import decky to get plugin directory path
 import decky
 
-# Setup paths - Decky automatically adds py_modules/ to sys.path
-# but we'll ensure it's there
+# Setup paths
+# Decky extracts defaults/ folder and moves its contents to plugin root
+# So defaults/py_modules becomes py_modules/ at the plugin root
 PLUGIN_DIR = Path(decky.DECKY_PLUGIN_DIR)
 PY_MODULES = PLUGIN_DIR / "py_modules"
 
-# Add py_modules to path if not already there (Decky should do this automatically)
-if PY_MODULES.exists() and str(PY_MODULES) not in sys.path:
-    sys.path.insert(0, str(PY_MODULES))
-
 logger = decky.logger
-logger.info("=== Game Progress Tracker v1.0.32 starting ===")
+logger.info("=== Game Progress Tracker v1.0.33 starting ===")
 logger.info(f"Plugin dir: {PLUGIN_DIR}")
-logger.info(f"py_modules: {PY_MODULES}")
+logger.info(f"py_modules path: {PY_MODULES}")
 logger.info(f"py_modules exists: {PY_MODULES.exists()}")
+
+# Add py_modules to path
+if PY_MODULES.exists():
+    if str(PY_MODULES) not in sys.path:
+        sys.path.insert(0, str(PY_MODULES))
+        logger.info(f"Added {PY_MODULES} to sys.path")
+else:
+    # Fallback: check if defaults/py_modules exists (in case defaults wasn't processed)
+    defaults_py_modules = PLUGIN_DIR / "defaults" / "py_modules"
+    if defaults_py_modules.exists():
+        sys.path.insert(0, str(defaults_py_modules))
+        logger.info(f"Using fallback: {defaults_py_modules}")
 
 # List contents of plugin directory to see what was actually extracted
 if PLUGIN_DIR.exists():

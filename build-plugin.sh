@@ -54,17 +54,21 @@ fi
 echo "Creating plugin directory structure..."
 mkdir -p plugin-build/game-progress-tracker
 
-# Copy backend source files
-echo "Copying backend source files..."
-mkdir -p plugin-build/game-progress-tracker/py_modules
-cp backend/src/database.py plugin-build/game-progress-tracker/py_modules/
-cp backend/src/steam_data.py plugin-build/game-progress-tracker/py_modules/
-cp backend/src/hltb_service.py plugin-build/game-progress-tracker/py_modules/
+# Create defaults/py_modules for Python dependencies
+# Decky extracts defaults/ and moves/symlinks contents to plugin root
+# This makes py_modules/ available at runtime
+echo "Setting up defaults/py_modules for Python dependencies..."
+mkdir -p plugin-build/game-progress-tracker/defaults/py_modules
 
-# Install Python dependencies into py_modules/
-# Decky Loader automatically adds py_modules/ to sys.path
-echo "Installing Python dependencies into py_modules/..."
-pip3 install --target=plugin-build/game-progress-tracker/py_modules \
+# Copy backend source files into defaults/py_modules
+echo "Copying backend source files..."
+cp backend/src/database.py plugin-build/game-progress-tracker/defaults/py_modules/
+cp backend/src/steam_data.py plugin-build/game-progress-tracker/defaults/py_modules/
+cp backend/src/hltb_service.py plugin-build/game-progress-tracker/defaults/py_modules/
+
+# Install Python dependencies into defaults/py_modules/
+echo "Installing Python dependencies..."
+pip3 install --target=plugin-build/game-progress-tracker/defaults/py_modules \
     aiosqlite \
     vdf \
     howlongtobeatpy \
@@ -72,16 +76,11 @@ pip3 install --target=plugin-build/game-progress-tracker/py_modules \
 
 # Remove any compiled .so files that won't work on Steam Deck
 echo "Cleaning incompatible compiled files..."
-find plugin-build/game-progress-tracker/py_modules -name "*.so" -delete 2>/dev/null || true
-find plugin-build/game-progress-tracker/py_modules -name "*.dylib" -delete 2>/dev/null || true
+find plugin-build/game-progress-tracker/defaults/py_modules -name "*.so" -delete 2>/dev/null || true
+find plugin-build/game-progress-tracker/defaults/py_modules -name "*.dylib" -delete 2>/dev/null || true
 
 # Remove __pycache__ directories to reduce size
-find plugin-build/game-progress-tracker/py_modules -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-
-# Also create defaults/ folder as backup (Decky moves this to plugin root)
-echo "Creating defaults folder with dependencies..."
-mkdir -p plugin-build/game-progress-tracker/defaults/py_modules
-cp -r plugin-build/game-progress-tracker/py_modules/* plugin-build/game-progress-tracker/defaults/py_modules/
+find plugin-build/game-progress-tracker/defaults/py_modules -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 # Copy required files
 echo "Copying plugin files..."
