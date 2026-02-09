@@ -14,20 +14,16 @@ from typing import Optional, Dict, Any, List
 import decky
 
 # Add paths BEFORE importing custom modules
-# Decky extracts 'backend/' but NOT 'py_modules/' - so we put deps in backend/
+# Decky only extracts 'backend/src/' - so ALL deps go there
 PLUGIN_DIR = Path(decky.DECKY_PLUGIN_DIR)
-BACKEND_PATH = PLUGIN_DIR / "backend"
-DEPS_PATH = BACKEND_PATH / "deps"
-sys.path.append(str(DEPS_PATH))
-sys.path.append(str(BACKEND_PATH / "src"))
+BACKEND_SRC = PLUGIN_DIR / "backend" / "src"
+sys.path.insert(0, str(BACKEND_SRC))
 
 logger = decky.logger
-logger.info("=== Game Progress Tracker v1.0.29 starting ===")
+logger.info("=== Game Progress Tracker v1.0.30 starting ===")
 logger.info(f"Plugin dir: {PLUGIN_DIR}")
-logger.info(f"Backend path: {BACKEND_PATH}")
-logger.info(f"Deps path: {DEPS_PATH}")
-logger.info(f"Backend exists: {BACKEND_PATH.exists()}")
-logger.info(f"Deps exists: {DEPS_PATH.exists()}")
+logger.info(f"Backend src: {BACKEND_SRC}")
+logger.info(f"Backend src exists: {BACKEND_SRC.exists()}")
 
 # List contents of plugin directory to see what was actually extracted
 plugin_path = Path(decky.DECKY_PLUGIN_DIR)

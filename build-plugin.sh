@@ -54,12 +54,16 @@ fi
 echo "Creating plugin directory structure..."
 mkdir -p plugin-build/game-progress-tracker
 
-# Install Python dependencies into backend/deps
-# Decky extracts 'backend/' folder but NOT 'py_modules/' folder
-# So we put all Python deps inside backend/deps/
-echo "Installing Python dependencies into backend/deps..."
-mkdir -p plugin-build/game-progress-tracker/backend/deps
-pip3 install --target=plugin-build/game-progress-tracker/backend/deps \
+# Copy backend source files FIRST
+echo "Copying backend source files..."
+mkdir -p plugin-build/game-progress-tracker/backend/src
+cp -r backend/src/* plugin-build/game-progress-tracker/backend/src/
+cp backend/__init__.py plugin-build/game-progress-tracker/backend/
+
+# Install Python dependencies directly into backend/src
+# Decky extracts 'backend/src/' but NOT other folders like 'deps/' or 'py_modules/'
+echo "Installing Python dependencies into backend/src..."
+pip3 install --target=plugin-build/game-progress-tracker/backend/src \
     aiosqlite \
     vdf \
     howlongtobeatpy \
@@ -67,16 +71,11 @@ pip3 install --target=plugin-build/game-progress-tracker/backend/deps \
 
 # Remove any compiled .so files that won't work on Steam Deck
 echo "Cleaning incompatible compiled files..."
-find plugin-build/game-progress-tracker/backend/deps -name "*.so" -delete 2>/dev/null || true
-find plugin-build/game-progress-tracker/backend/deps -name "*.dylib" -delete 2>/dev/null || true
+find plugin-build/game-progress-tracker/backend/src -name "*.so" -delete 2>/dev/null || true
+find plugin-build/game-progress-tracker/backend/src -name "*.dylib" -delete 2>/dev/null || true
 
 # Remove __pycache__ directories to reduce size
-find plugin-build/game-progress-tracker/backend/deps -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-
-# Copy backend source files
-echo "Copying backend source files..."
-cp -r backend/src plugin-build/game-progress-tracker/backend/
-cp backend/__init__.py plugin-build/game-progress-tracker/backend/
+find plugin-build/game-progress-tracker/backend/src -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
 # Copy required files
 echo "Copying plugin files..."
