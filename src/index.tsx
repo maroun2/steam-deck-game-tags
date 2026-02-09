@@ -5,7 +5,7 @@
 
 import { staticClasses } from '@decky/ui';
 import { definePlugin, routerHook } from '@decky/api';
-import { ReactElement, useState, FC } from 'react';
+import React, { ReactElement, useState, FC } from 'react';
 import { GameTag } from './components/GameTag';
 import { TagManager } from './components/TagManager';
 import { Settings } from './components/Settings';

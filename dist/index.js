@@ -1,4 +1,4 @@
-const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.0.10","flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.0.11","flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -451,7 +451,7 @@ const Settings = () => {
             SP_REACT.createElement("div", { style: styles.about },
                 SP_REACT.createElement("p", null,
                     "Game Progress Tracker v",
-                    "1.0.10"),
+                    "1.0.11"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };
@@ -679,9 +679,9 @@ const GamePageOverlay = ({ appid }) => {
     if (loading || !tag) {
         return null;
     }
-    return (React.createElement(React.Fragment, null,
-        React.createElement(GameTag, { tag: tag, onClick: () => setShowManager(true) }),
-        showManager && (React.createElement(TagManager, { appid: appid, onClose: () => setShowManager(false) }))));
+    return (SP_REACT.createElement(SP_REACT.Fragment, null,
+        SP_REACT.createElement(GameTag, { tag: tag, onClick: () => setShowManager(true) }),
+        showManager && (SP_REACT.createElement(TagManager, { appid: appid, onClose: () => setShowManager(false) }))));
 };
 /**
  * Main Plugin Definition
@@ -691,18 +691,18 @@ var index = definePlugin(() => {
     const gamePagePatch = routerHook.addPatch('/library/app/:appId', (props) => {
         const appid = extractAppId(props.path);
         if (appid) {
-            return (React.createElement(React.Fragment, null,
+            return (SP_REACT.createElement(SP_REACT.Fragment, null,
                 props.children,
-                React.createElement(GamePageOverlay, { appid: appid })));
+                SP_REACT.createElement(GamePageOverlay, { appid: appid })));
         }
         return props.children;
     });
     return {
         name: 'Game Progress Tracker',
-        titleView: React.createElement("div", { className: DFL.staticClasses.Title }, "Game Progress Tracker"),
-        content: React.createElement(Settings, null),
-        icon: (React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", width: "24", height: "24" },
-            React.createElement("path", { d: "M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.87 0-7-3.13-7-7V8.3l7-3.11 7 3.11V13c0 3.87-3.13 7-7 7zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z" }))),
+        titleView: SP_REACT.createElement("div", { className: DFL.staticClasses.Title }, "Game Progress Tracker"),
+        content: SP_REACT.createElement(Settings, null),
+        icon: (SP_REACT.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 24 24", fill: "currentColor", width: "24", height: "24" },
+            SP_REACT.createElement("path", { d: "M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.87 0-7-3.13-7-7V8.3l7-3.11 7 3.11V13c0 3.87-3.13 7-7 7zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z" }))),
         onDismount() {
             // Clean up patches when plugin is unloaded
             routerHook.removePatch('/library/app/:appId', gamePagePatch);
