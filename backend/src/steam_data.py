@@ -4,12 +4,13 @@ Parses Steam VDF files to extract game information, playtime, and achievements
 """
 
 import os
-import logging
 import vdf
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-logger = logging.getLogger("GameProgressTracker.steam_data")
+# Use Decky's built-in logger
+import decky_plugin
+logger = decky_plugin.logger
 
 
 class SteamDataService:

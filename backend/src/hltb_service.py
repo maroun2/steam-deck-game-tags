@@ -3,12 +3,13 @@ HowLongToBeat Service
 Integrates with HowLongToBeat to fetch game completion times
 """
 
-import logging
 import asyncio
 from typing import Optional, Dict, Any, List
 from howlongtobeatpy import HowLongToBeat
 
-logger = logging.getLogger("GameProgressTracker.hltb")
+# Use Decky's built-in logger
+import decky_plugin
+logger = decky_plugin.logger
 
 
 class HLTBService:

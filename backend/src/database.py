@@ -4,12 +4,13 @@ Handles SQLite operations for tags, cache, and settings
 """
 
 import aiosqlite
-import logging
 import time
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-logger = logging.getLogger("GameProgressTracker.database")
+# Use Decky's built-in logger
+import decky_plugin
+logger = decky_plugin.logger
 
 
 class Database:

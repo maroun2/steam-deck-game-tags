@@ -4,17 +4,13 @@ Decky Loader plugin for automatic game tagging
 """
 
 import os
-import logging
 import asyncio
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger("GameProgressTracker")
+# Use Decky's built-in logger for proper log integration
+import decky_plugin
+logger = decky_plugin.logger
 
 # Import backend modules
 from backend.src.database import Database
@@ -209,9 +205,15 @@ class Plugin:
 
             for i, game in enumerate(games):
                 appid = game['appid']
+                game_name = game.get('name', f'Game {appid}')
+
+                # Log progress for each game
+                logger.info(f"[{i+1}/{total}] Syncing: {game_name} ({appid})")
+
                 try:
                     await self.sync_game_tags(appid)
                     synced += 1
+                    logger.info(f"[{i+1}/{total}] Completed: {game_name}")
 
                     # Add delay for HLTB rate limiting
                     if i < total - 1:
@@ -220,7 +222,7 @@ class Plugin:
                 except Exception as e:
                     errors += 1
                     error_list.append({"appid": appid, "error": str(e)})
-                    logger.error(f"Failed to sync {appid}: {e}")
+                    logger.error(f"[{i+1}/{total}] Failed: {game_name} - {e}")
 
             logger.info(f"Library sync completed: {synced}/{total} synced, {errors} errors")
 
