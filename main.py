@@ -18,7 +18,7 @@ PLUGIN_DIR = Path(decky.DECKY_PLUGIN_DIR)
 BACKEND_SRC = PLUGIN_DIR / "backend" / "src"
 
 logger = decky.logger
-logger.info("=== Game Progress Tracker v1.0.40 starting ===")
+logger.info("=== Game Progress Tracker v1.0.41 starting ===")
 logger.info(f"Plugin dir: {PLUGIN_DIR}")
 logger.info(f"Backend src: {BACKEND_SRC} exists={BACKEND_SRC.exists()}")
 
@@ -83,9 +83,10 @@ class Plugin:
         logger.info("Plugin initialized successfully")
 
         # Auto-run sync on startup for testing
+        # Note: Use Plugin.method(self) pattern due to Decky Loader bug #509
         logger.info("=== AUTO-RUNNING sync_library for testing ===")
         try:
-            result = await self.sync_library()
+            result = await Plugin.sync_library(self)
             logger.info(f"Auto-sync result: {result}")
         except Exception as e:
             logger.error(f"Auto-sync failed: {e}")
