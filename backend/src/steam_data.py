@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 
 # Use Decky's built-in logger
-import decky_plugin
-logger = decky_plugin.logger
+import decky
+logger = decky.logger
 
 
 class SteamDataService:

@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List
 
 # Use Decky's built-in logger for proper log integration
-import decky_plugin
-logger = decky_plugin.logger
+import decky
+logger = decky.logger
 
 # Import backend modules
 from backend.src.database import Database

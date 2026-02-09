@@ -8,8 +8,8 @@ from typing import Optional, Dict, Any, List
 from howlongtobeatpy import HowLongToBeat
 
 # Use Decky's built-in logger
-import decky_plugin
-logger = decky_plugin.logger
+import decky
+logger = decky.logger
 
 
 class HLTBService:
