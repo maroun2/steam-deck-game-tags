@@ -137,12 +137,13 @@ class Plugin:
             if stats['unlocked_achievements'] >= stats['total_achievements']:
                 return "completed"
 
-        # Priority 2: Mastered (over-played)
-        if hltb and hltb.get('main_extra'):
-            completion_hours = hltb['main_extra']
-            completion_threshold = completion_hours * mastered_multiplier * 60  # Convert to minutes
+        # Priority 2: Mastered (played > main_story * multiplier)
+        # Use main_story time, not main_extra (completionist time)
+        if hltb and hltb.get('main_story'):
+            main_story_hours = hltb['main_story']
+            mastered_threshold = main_story_hours * mastered_multiplier * 60  # Convert to minutes
 
-            if stats['playtime_minutes'] >= completion_threshold:
+            if stats['playtime_minutes'] >= mastered_threshold:
                 return "mastered"
 
         # Priority 3: In Progress (played >= threshold)
