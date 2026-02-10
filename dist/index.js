@@ -1,4 +1,4 @@
-const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.0.56","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.0.57","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -383,8 +383,8 @@ const TAG_COLORS = {
 const Settings = () => {
     const [settings, setSettings] = SP_REACT.useState({
         auto_tag_enabled: true,
-        mastered_multiplier: 1.5,
-        in_progress_threshold: 60,
+        mastered_multiplier: 1.5, // Deprecated, kept for compatibility
+        in_progress_threshold: 30,
         cache_ttl: 7200
     });
     const [stats, setStats] = SP_REACT.useState(null);
@@ -467,7 +467,7 @@ const Settings = () => {
     };
     const syncLibrary = async () => {
         await logToBackend('info', '========================================');
-        await logToBackend('info', `syncLibrary button clicked - v${"1.0.56"}`);
+        await logToBackend('info', `syncLibrary button clicked - v${"1.0.57"}`);
         await logToBackend('info', '========================================');
         try {
             setSyncing(true);
@@ -544,8 +544,8 @@ const Settings = () => {
         return acc;
     }, {});
     const tagLabels = {
-        completed: 'Completed',
-        mastered: 'Mastered',
+        mastered: 'Mastered (100% Achievements)',
+        completed: 'Completed (Beat Main Story)',
         in_progress: 'In Progress',
     };
     const taggedCount = stats ? stats.completed + stats.in_progress + stats.mastered : 0;
@@ -575,7 +575,7 @@ const Settings = () => {
                 showTaggedList ? '- Hide' : '+ View',
                 " All Tagged Games",
                 ` (${taggedCount} games)`),
-            showTaggedList && (SP_REACT.createElement("div", { style: styles.taggedListContainer }, loadingGames ? (SP_REACT.createElement("div", { style: styles.loadingText }, "Loading games...")) : taggedGames.length === 0 ? (SP_REACT.createElement("div", { style: styles.loadingText }, "No tagged games yet. Games need 60+ min playtime, 100% achievements, or HLTB mastery to be tagged.")) : (['completed', 'mastered', 'in_progress'].map((tagType) => {
+            showTaggedList && (SP_REACT.createElement("div", { style: styles.taggedListContainer }, loadingGames ? (SP_REACT.createElement("div", { style: styles.loadingText }, "Loading games...")) : taggedGames.length === 0 ? (SP_REACT.createElement("div", { style: styles.loadingText }, "No tagged games yet. Click \"Sync Entire Library\" to tag your games based on playtime and achievements.")) : (['mastered', 'completed', 'in_progress'].map((tagType) => {
                 const games = groupedGames[tagType] || [];
                 if (games.length === 0)
                     return null;
@@ -612,20 +612,28 @@ const Settings = () => {
                             SP_REACT.createElement("input", { type: "checkbox", checked: settings.auto_tag_enabled, onChange: (e) => updateSetting('auto_tag_enabled', e.target.checked), style: styles.checkbox }),
                             "Enable Auto-Tagging"))),
                 SP_REACT.createElement("div", { style: styles.settingGroup },
-                    SP_REACT.createElement("h4", { style: styles.settingGroupTitle }, "Tag Thresholds"),
-                    SP_REACT.createElement("div", { style: styles.settingRow },
-                        SP_REACT.createElement("label", { style: styles.label },
-                            "Mastered Multiplier: ",
-                            settings.mastered_multiplier,
-                            "x"),
-                        SP_REACT.createElement("input", { type: "range", min: "1.0", max: "3.0", step: "0.1", value: settings.mastered_multiplier, onChange: (e) => updateSetting('mastered_multiplier', parseFloat(e.target.value)), style: styles.slider }),
-                        SP_REACT.createElement("div", { style: styles.hint }, "Playtime must be this many times the HLTB completion time")),
+                    SP_REACT.createElement("h4", { style: styles.settingGroupTitle }, "Tag Rules"),
+                    SP_REACT.createElement("div", { style: styles.tagRulesInfo },
+                        SP_REACT.createElement("div", { style: styles.tagRule },
+                            SP_REACT.createElement("span", { style: { ...styles.tagDot, backgroundColor: TAG_COLORS.mastered } }),
+                            SP_REACT.createElement("strong", null, "Mastered:"),
+                            " 100% achievements unlocked"),
+                        SP_REACT.createElement("div", { style: styles.tagRule },
+                            SP_REACT.createElement("span", { style: { ...styles.tagDot, backgroundColor: TAG_COLORS.completed } }),
+                            SP_REACT.createElement("strong", null, "Completed:"),
+                            " Playtime \u2265 main story time (from HLTB)"),
+                        SP_REACT.createElement("div", { style: styles.tagRule },
+                            SP_REACT.createElement("span", { style: { ...styles.tagDot, backgroundColor: TAG_COLORS.in_progress } }),
+                            SP_REACT.createElement("strong", null, "In Progress:"),
+                            " Playtime \u2265 ",
+                            settings.in_progress_threshold,
+                            " minutes")),
                     SP_REACT.createElement("div", { style: styles.settingRow },
                         SP_REACT.createElement("label", { style: styles.label },
                             "In Progress Threshold: ",
                             settings.in_progress_threshold,
                             " minutes"),
-                        SP_REACT.createElement("input", { type: "range", min: "15", max: "300", step: "15", value: settings.in_progress_threshold, onChange: (e) => updateSetting('in_progress_threshold', parseInt(e.target.value)), style: styles.slider }),
+                        SP_REACT.createElement("input", { type: "range", min: "15", max: "120", step: "15", value: settings.in_progress_threshold, onChange: (e) => updateSetting('in_progress_threshold', parseInt(e.target.value)), style: styles.slider }),
                         SP_REACT.createElement("div", { style: styles.hint }, "Minimum playtime to mark as In Progress"))),
                 SP_REACT.createElement("div", { style: styles.settingGroup },
                     SP_REACT.createElement("h4", { style: styles.settingGroupTitle }, "Cache"),
@@ -635,7 +643,7 @@ const Settings = () => {
             SP_REACT.createElement("div", { style: styles.about },
                 SP_REACT.createElement("p", null,
                     "Game Progress Tracker v",
-                    "1.0.56"),
+                    "1.0.57"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };
@@ -848,6 +856,19 @@ const styles = {
         fontSize: '12px',
         color: '#888',
         marginTop: '8px',
+    },
+    tagRulesInfo: {
+        marginBottom: '16px',
+        padding: '12px',
+        backgroundColor: '#252525',
+        borderRadius: '4px',
+    },
+    tagRule: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '8px',
+        fontSize: '13px',
     },
 };
 

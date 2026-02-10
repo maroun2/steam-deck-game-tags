@@ -91,6 +91,12 @@ class Plugin:
         self.db = Database(db_path)
         await self.db.init_database()
 
+        # Migration: Update default in_progress_threshold from 60 to 30
+        current_threshold = await self.db.get_setting('in_progress_threshold', 30)
+        if current_threshold == 60:
+            await self.db.set_setting('in_progress_threshold', 30)
+            logger.info("Migrated in_progress_threshold from 60 to 30 minutes")
+
         # Initialize services
         self.steam_service = SteamDataService()
         self.hltb_service = HLTBService()
