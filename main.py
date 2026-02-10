@@ -12,13 +12,28 @@ from typing import Optional, Dict, Any, List
 
 # Import decky to get plugin directory path
 import decky
+import json
 
 # Setup paths - everything is in backend/src/
 PLUGIN_DIR = Path(decky.DECKY_PLUGIN_DIR)
 BACKEND_SRC = PLUGIN_DIR / "backend" / "src"
 
+# Read version from plugin.json
+def get_plugin_version():
+    try:
+        plugin_json_path = PLUGIN_DIR / "plugin.json"
+        if plugin_json_path.exists():
+            with open(plugin_json_path) as f:
+                data = json.load(f)
+                return data.get("version", "unknown")
+    except Exception:
+        pass
+    return "unknown"
+
+PLUGIN_VERSION = get_plugin_version()
+
 logger = decky.logger
-logger.info("=== Game Progress Tracker v1.0.52 starting ===")
+logger.info(f"=== Game Progress Tracker v{PLUGIN_VERSION} starting ===")
 logger.info(f"Plugin dir: {PLUGIN_DIR}")
 logger.info(f"Backend src: {BACKEND_SRC} exists={BACKEND_SRC.exists()}")
 
@@ -371,10 +386,16 @@ class Plugin:
 
     async def get_tag_statistics(self) -> Dict[str, Any]:
         """Get counts per tag type"""
+        logger.info("=== get_tag_statistics called ===")
         try:
             all_tags = await self.db.get_all_tags()
+            logger.info(f"[get_tag_statistics] all_tags count: {len(all_tags) if all_tags else 0}")
+            if all_tags:
+                logger.info(f"[get_tag_statistics] all_tags sample (first 3): {all_tags[:3]}")
+
             all_games = await self.db.get_all_game_stats()
             total_library = len(all_games) if all_games else 0
+            logger.info(f"[get_tag_statistics] total_library (all_games count): {total_library}")
 
             stats = {
                 "completed": 0,
@@ -389,9 +410,13 @@ class Plugin:
                 if tag_type in stats:
                     stats[tag_type] += 1
 
-            return {"success": True, "stats": stats}
+            result = {"success": True, "stats": stats}
+            logger.info(f"[get_tag_statistics] returning: {result}")
+            return result
         except Exception as e:
             logger.error(f"Error getting tag statistics: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {"success": False, "error": str(e)}
 
     async def log_frontend(self, level: str, message: str) -> Dict[str, bool]:
@@ -539,8 +564,12 @@ class Plugin:
 
     async def get_all_tags_with_names(self) -> Dict[str, Any]:
         """Get all tags with game names for display"""
+        logger.info("=== get_all_tags_with_names called ===")
         try:
             all_tags = await self.db.get_all_tags()
+            logger.info(f"[get_all_tags_with_names] all_tags count: {len(all_tags) if all_tags else 0}")
+            if all_tags:
+                logger.info(f"[get_all_tags_with_names] all_tags sample (first 3): {all_tags[:3]}")
 
             result = []
             for tag_entry in all_tags:
@@ -559,7 +588,12 @@ class Plugin:
             tag_order = {'completed': 0, 'mastered': 1, 'in_progress': 2}
             result.sort(key=lambda x: (tag_order.get(x['tag'], 99), x['game_name'].lower()))
 
+            logger.info(f"[get_all_tags_with_names] returning {len(result)} games")
+            if result:
+                logger.info(f"[get_all_tags_with_names] result sample (first 3): {result[:3]}")
             return {'success': True, 'games': result}
         except Exception as e:
             logger.error(f"Error getting all tags with names: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {'success': False, 'error': str(e)}

@@ -21,6 +21,14 @@ if [ "$VERSION" != "dev" ]; then
     sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION_NUM\"/" package.json
     rm package.json.bak 2>/dev/null || true
 
+    # DEBUG: Verify package.json version
+    PACKAGE_VER=$(grep '"version"' package.json | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+    echo "[DEBUG] package.json version after update: $PACKAGE_VER"
+    if [ "$PACKAGE_VER" != "$VERSION_NUM" ]; then
+        echo "[ERROR] package.json version mismatch! Expected: $VERSION_NUM, Got: $PACKAGE_VER"
+        exit 1
+    fi
+
     # Update or add version to plugin.json
     if grep -q '"version"' plugin.json; then
         sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION_NUM\"/" plugin.json
@@ -29,6 +37,16 @@ if [ "$VERSION" != "dev" ]; then
         sed -i.bak "s/\"author\": \".*\"/&,\n  \"version\": \"$VERSION_NUM\"/" plugin.json
     fi
     rm plugin.json.bak 2>/dev/null || true
+
+    # DEBUG: Verify plugin.json version
+    PLUGIN_VER=$(grep '"version"' plugin.json | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+    echo "[DEBUG] plugin.json version after update: $PLUGIN_VER"
+    if [ "$PLUGIN_VER" != "$VERSION_NUM" ]; then
+        echo "[ERROR] plugin.json version mismatch! Expected: $VERSION_NUM, Got: $PLUGIN_VER"
+        exit 1
+    fi
+
+    echo "[DEBUG] ✓ Both version files updated correctly to $VERSION_NUM"
 fi
 
 # Clean previous builds
@@ -75,13 +93,20 @@ cp README.md plugin-build/game-progress-tracker/
 # Create version file
 echo "$VERSION" > plugin-build/game-progress-tracker/VERSION
 
+# DEBUG: Verify plugin.json in plugin-build before zipping
+echo "[DEBUG] Verifying plugin.json in plugin-build directory..."
+BUILD_PLUGIN_VER=$(grep '"version"' plugin-build/game-progress-tracker/plugin.json | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+echo "[DEBUG] plugin-build/game-progress-tracker/plugin.json version: $BUILD_PLUGIN_VER"
+
 # Create release zip using Python (cross-platform)
 echo "Creating release zip..."
 python3 -c "
 import zipfile
 import os
+import json
 
 version = '${VERSION}'
+version_num = version.lstrip('v')
 zip_name = f'game-progress-tracker-{version}.zip'
 
 with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -95,6 +120,18 @@ print(f'\n{\"=\"*42}')
 print('Zip file created successfully!')
 print('='*42)
 print(f'File: {zip_name}')
+
+# DEBUG: Verify version inside the zip file
+print('\n[DEBUG] Verifying version inside zip file...')
+with zipfile.ZipFile(zip_name, 'r') as zipf:
+    plugin_json_content = zipf.read('game-progress-tracker/plugin.json').decode('utf-8')
+    plugin_data = json.loads(plugin_json_content)
+    zip_version = plugin_data.get('version', 'NOT FOUND')
+    print(f'[DEBUG] Version in zip plugin.json: {zip_version}')
+    if zip_version != version_num:
+        print(f'[ERROR] ZIP VERSION MISMATCH! Expected: {version_num}, Got: {zip_version}')
+        exit(1)
+    print(f'[DEBUG] ✓ ZIP file version verified: {zip_version}')
 
 # List contents
 print('\nContents (first 20 items):')

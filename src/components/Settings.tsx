@@ -95,7 +95,7 @@ export const Settings: FC = () => {
 
   // Tagged games list state
   const [taggedGames, setTaggedGames] = useState<TaggedGame[]>([]);
-  const [showTaggedList, setShowTaggedList] = useState(false);
+  const [showTaggedList, setShowTaggedList] = useState(true);
   const [loadingGames, setLoadingGames] = useState(false);
 
   // Settings section state
@@ -104,14 +104,8 @@ export const Settings: FC = () => {
   useEffect(() => {
     loadSettings();
     loadStats();
+    loadTaggedGames();  // Always load on mount
   }, []);
-
-  // Auto-load tagged games when stats show there are tagged games
-  useEffect(() => {
-    if (stats && (stats.completed + stats.in_progress + stats.mastered) > 0) {
-      loadTaggedGames();
-    }
-  }, [stats]);
 
   const loadSettings = async () => {
     try {
@@ -125,25 +119,29 @@ export const Settings: FC = () => {
   };
 
   const loadStats = async () => {
+    await logToBackend('info', 'loadStats called');
     try {
-      const result = await call<[], { stats: TagStatistics }>('get_tag_statistics');
-      if (result.stats) {
+      const result = await call<[], { success: boolean; stats: TagStatistics }>('get_tag_statistics');
+      await logToBackend('info', `loadStats result: ${JSON.stringify(result)}`);
+      if (result.success && result.stats) {
         setStats(result.stats);
       }
     } catch (err) {
-      console.error('Error loading stats:', err);
+      await logToBackend('error', `loadStats error: ${err}`);
     }
   };
 
   const loadTaggedGames = async () => {
+    await logToBackend('info', 'loadTaggedGames called');
     try {
       setLoadingGames(true);
       const result = await call<[], { success: boolean; games: TaggedGame[] }>('get_all_tags_with_names');
+      await logToBackend('info', `loadTaggedGames result: success=${result.success}, games=${result.games?.length || 0}`);
       if (result.success && result.games) {
         setTaggedGames(result.games);
       }
     } catch (err) {
-      console.error('Error loading tagged games:', err);
+      await logToBackend('error', `loadTaggedGames error: ${err}`);
     } finally {
       setLoadingGames(false);
     }
@@ -176,7 +174,7 @@ export const Settings: FC = () => {
 
   const syncLibrary = async () => {
     await logToBackend('info', '========================================');
-    await logToBackend('info', 'syncLibrary button clicked - v1.0.52');
+    await logToBackend('info', `syncLibrary button clicked - v${__PLUGIN_VERSION__}`);
     await logToBackend('info', '========================================');
     try {
       setSyncing(true);

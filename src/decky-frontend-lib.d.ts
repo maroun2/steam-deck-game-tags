@@ -2,6 +2,9 @@
  * Type declarations for decky-frontend-lib
  */
 
+// Global constant injected by rollup at build time
+declare const __PLUGIN_VERSION__: string;
+
 declare module 'decky-frontend-lib' {
   import { ReactElement, FC, VFC } from 'react';
 
