@@ -210,29 +210,36 @@ class Plugin:
 
     async def get_game_tag(self, appid: str) -> Dict[str, Any]:
         """Get tag for a specific game"""
+        logger.info(f"=== get_game_tag called: appid={appid} ===")
         try:
             tag = await self.db.get_tag(appid)
+            logger.info(f"[get_game_tag] appid={appid}, tag={tag}")
             if tag:
                 return {"success": True, "tag": tag}
             return {"success": True, "tag": None}
         except Exception as e:
             logger.error(f"Error getting tag for {appid}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {"success": False, "error": str(e)}
 
     async def set_manual_tag(self, appid: str, tag: str) -> Dict[str, bool]:
         """Manually set/override tag"""
+        logger.info(f"=== set_manual_tag called: appid={appid}, tag={tag} ===")
         try:
             # Validate tag
             valid_tags = ['completed', 'in_progress', 'mastered']
             if tag not in valid_tags:
+                logger.error(f"Invalid tag: {tag}. Must be one of: {valid_tags}")
                 return {"success": False, "error": f"Invalid tag. Must be one of: {valid_tags}"}
 
             success = await self.db.set_tag(appid, tag, is_manual=True)
-            if success:
-                logger.info(f"Manual tag set for {appid}: {tag}")
+            logger.info(f"[set_manual_tag] appid={appid}, tag={tag}, success={success}")
             return {"success": success}
         except Exception as e:
             logger.error(f"Error setting manual tag for {appid}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {"success": False, "error": str(e)}
 
     async def remove_tag(self, appid: str) -> Dict[str, bool]:
@@ -340,32 +347,42 @@ class Plugin:
 
     async def get_game_details(self, appid: str) -> Dict[str, Any]:
         """Get all details for a game"""
+        logger.info(f"=== get_game_details called: appid={appid} ===")
         try:
             # Get stats
             stats = await self.db.get_game_stats(appid)
+            logger.info(f"[get_game_details] stats from db: {stats}")
 
             # If no stats, fetch from Steam
             if not stats:
+                logger.info(f"[get_game_details] no stats in db, fetching from Steam...")
                 stats = await self.steam_service.get_game_stats_full(appid)
+                logger.info(f"[get_game_details] stats from Steam: {stats}")
                 if stats:
                     await self.db.update_game_stats(appid, stats)
 
             # Get tag
             tag = await self.db.get_tag(appid)
+            logger.info(f"[get_game_details] tag: {tag}")
 
             # Get HLTB data
             hltb_data = await self.db.get_hltb_cache(appid)
+            logger.info(f"[get_game_details] hltb_data: {hltb_data}")
 
-            return {
+            result = {
                 "success": True,
                 "appid": appid,
                 "stats": stats,
                 "tag": tag,
                 "hltb_data": hltb_data
             }
+            logger.info(f"[get_game_details] returning: success=True")
+            return result
 
         except Exception as e:
             logger.error(f"Error getting game details for {appid}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return {"success": False, "error": str(e)}
 
     async def get_settings(self) -> Dict[str, Any]:

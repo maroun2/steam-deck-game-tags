@@ -332,14 +332,18 @@ class SteamDataService:
 
     async def get_non_steam_games(self) -> List[Dict[str, Any]]:
         """Get non-Steam games from shortcuts.vdf"""
+        logger.info("=== get_non_steam_games called ===")
         user_id = await self.get_steam_user_id()
+        logger.info(f"[get_non_steam_games] user_id={user_id}, steam_path={self.steam_path}")
         if not user_id or not self.steam_path:
+            logger.info("[get_non_steam_games] no user_id or steam_path, returning empty")
             return []
 
         shortcuts_path = self.steam_path / "userdata" / user_id / "config" / "shortcuts.vdf"
+        logger.info(f"[get_non_steam_games] shortcuts_path={shortcuts_path}, exists={shortcuts_path.exists()}")
 
         if not shortcuts_path.exists():
-            logger.debug("shortcuts.vdf not found")
+            logger.info("[get_non_steam_games] shortcuts.vdf not found")
             return []
 
         games = []
@@ -347,14 +351,19 @@ class SteamDataService:
             # shortcuts.vdf is a binary VDF file, need special parsing
             with open(shortcuts_path, 'rb') as f:
                 content = f.read()
+            logger.info(f"[get_non_steam_games] read {len(content)} bytes from shortcuts.vdf")
 
             # Parse binary VDF format for shortcuts
             # This is a simplified parser that extracts appid and appname
             games = self._parse_shortcuts_binary(content)
-            logger.info(f"Found {len(games)} non-Steam games")
+            logger.info(f"[get_non_steam_games] parsed {len(games)} non-Steam games")
+            if games:
+                logger.info(f"[get_non_steam_games] sample: {games[:3]}")
 
         except Exception as e:
             logger.error(f"Failed to parse shortcuts.vdf: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
         return games
 

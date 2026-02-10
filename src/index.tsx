@@ -5,17 +5,28 @@
 
 import { staticClasses } from '@decky/ui';
 import { definePlugin, routerHook } from '@decky/api';
-import React, { ReactElement, useState, FC } from 'react';
+import React, { ReactElement, useState, useEffect, FC } from 'react';
 import { GameTag } from './components/GameTag';
 import { TagManager } from './components/TagManager';
 import { Settings } from './components/Settings';
 import { useGameTag } from './hooks/useGameTag';
+
+// Debug logging helper
+const log = (msg: string, data?: any) => {
+  const logMsg = `[GameProgressTracker] ${msg}`;
+  if (data !== undefined) {
+    console.log(logMsg, data);
+  } else {
+    console.log(logMsg);
+  }
+};
 
 /**
  * Extract appid from route path
  */
 function extractAppId(path: string): string | null {
   const match = path.match(/\/library\/app\/(\d+)/);
+  log(`extractAppId: path="${path}", match=${match ? match[1] : 'null'}`);
   return match ? match[1] : null;
 }
 
@@ -24,20 +35,37 @@ function extractAppId(path: string): string | null {
  * Displays tag badge and manages tag editor
  */
 const GamePageOverlay: FC<{ appid: string }> = ({ appid }) => {
-  const { tag, loading } = useGameTag(appid);
+  const { tag, loading, error } = useGameTag(appid);
   const [showManager, setShowManager] = useState(false);
 
-  if (loading || !tag) {
+  useEffect(() => {
+    log(`GamePageOverlay: appid=${appid}, loading=${loading}, tag=`, tag);
+    if (error) {
+      log(`GamePageOverlay: error=${error}`);
+    }
+  }, [appid, tag, loading, error]);
+
+  // Show overlay even if no tag (allows clicking to open TagManager)
+  if (loading) {
+    log(`GamePageOverlay: still loading for appid=${appid}`);
     return null;
   }
 
+  log(`GamePageOverlay: rendering for appid=${appid}, hasTag=${!!tag}, tagValue=${tag?.tag || 'none'}`);
+
   return (
     <>
-      <GameTag tag={tag} onClick={() => setShowManager(true)} />
+      <GameTag tag={tag} onClick={() => {
+        log(`GameTag clicked for appid=${appid}`);
+        setShowManager(true);
+      }} />
       {showManager && (
         <TagManager
           appid={appid}
-          onClose={() => setShowManager(false)}
+          onClose={() => {
+            log(`TagManager closed for appid=${appid}`);
+            setShowManager(false);
+          }}
         />
       )}
     </>

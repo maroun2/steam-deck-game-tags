@@ -1,4 +1,4 @@
-const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.2","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.3-debug","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -80,6 +80,16 @@ const TagIcon = ({ type, size = 24, className }) => {
  * GameTag Component
  * Displays a colored badge with icon for game tags
  */
+// Debug logging helper
+const log$3 = (msg, data) => {
+    const logMsg = `[GameProgressTracker][GameTag] ${msg}`;
+    if (data !== undefined) {
+        console.log(logMsg, data);
+    }
+    else {
+        console.log(logMsg);
+    }
+};
 const TAG_STYLES = {
     completed: {
         background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
@@ -95,13 +105,17 @@ const TAG_STYLES = {
     }
 };
 const GameTag = ({ tag, onClick, compact = false }) => {
+    log$3(`GameTag render: tag=${tag?.tag || 'null'}, compact=${compact}, hasOnClick=${!!onClick}`);
     if (!tag || !tag.tag) {
+        log$3('GameTag: no tag, returning null');
         return null;
     }
     const style = TAG_STYLES[tag.tag];
     if (!style) {
+        log$3(`GameTag: no style for tag=${tag.tag}, returning null`);
         return null;
     }
+    log$3(`GameTag: rendering badge for tag=${tag.tag}`);
     // Compact mode: just the icon with background circle
     if (compact) {
         const compactStyle = {
@@ -152,23 +166,38 @@ const GameTag = ({ tag, onClick, compact = false }) => {
  * TagManager Component
  * Modal for managing game tags manually
  */
+// Debug logging helper
+const log$2 = (msg, data) => {
+    const logMsg = `[GameProgressTracker][TagManager] ${msg}`;
+    if (data !== undefined) {
+        console.log(logMsg, data);
+    }
+    else {
+        console.log(logMsg);
+    }
+};
 const TagManager = ({ appid, onClose }) => {
     const [details, setDetails] = SP_REACT.useState(null);
     const [loading, setLoading] = SP_REACT.useState(true);
     const [error, setError] = SP_REACT.useState(null);
+    log$2(`TagManager mounted for appid=${appid}`);
     SP_REACT.useEffect(() => {
+        log$2(`TagManager useEffect: fetching details for appid=${appid}`);
         fetchDetails();
     }, [appid]);
     const fetchDetails = async () => {
         try {
+            log$2(`fetchDetails: calling get_game_details for appid=${appid}`);
             setLoading(true);
             setError(null);
             const result = await call('get_game_details', { appid });
+            log$2(`fetchDetails: result for appid=${appid}:`, result);
             setDetails(result);
         }
         catch (err) {
-            setError(err?.message || 'Failed to load game details');
-            console.error('Error fetching game details:', err);
+            const errorMsg = err?.message || 'Failed to load game details';
+            setError(errorMsg);
+            log$2(`fetchDetails: error for appid=${appid}: ${errorMsg}`, err);
         }
         finally {
             setLoading(false);
@@ -176,32 +205,41 @@ const TagManager = ({ appid, onClose }) => {
     };
     const setTag = async (tag) => {
         try {
-            await call('set_manual_tag', { appid, tag });
+            log$2(`setTag: calling set_manual_tag for appid=${appid}, tag=${tag}`);
+            const result = await call('set_manual_tag', { appid, tag });
+            log$2(`setTag: result for appid=${appid}:`, result);
             await fetchDetails();
         }
         catch (err) {
-            setError(err?.message || 'Failed to set tag');
-            console.error('Error setting tag:', err);
+            const errorMsg = err?.message || 'Failed to set tag';
+            setError(errorMsg);
+            log$2(`setTag: error for appid=${appid}: ${errorMsg}`, err);
         }
     };
     const resetToAuto = async () => {
         try {
-            await call('reset_to_auto_tag', { appid });
+            log$2(`resetToAuto: calling reset_to_auto_tag for appid=${appid}`);
+            const result = await call('reset_to_auto_tag', { appid });
+            log$2(`resetToAuto: result for appid=${appid}:`, result);
             await fetchDetails();
         }
         catch (err) {
-            setError(err?.message || 'Failed to reset tag');
-            console.error('Error resetting tag:', err);
+            const errorMsg = err?.message || 'Failed to reset tag';
+            setError(errorMsg);
+            log$2(`resetToAuto: error for appid=${appid}: ${errorMsg}`, err);
         }
     };
     const removeTag = async () => {
         try {
-            await call('remove_tag', { appid });
+            log$2(`removeTag: calling remove_tag for appid=${appid}`);
+            const result = await call('remove_tag', { appid });
+            log$2(`removeTag: result for appid=${appid}:`, result);
             await fetchDetails();
         }
         catch (err) {
-            setError(err?.message || 'Failed to remove tag');
-            console.error('Error removing tag:', err);
+            const errorMsg = err?.message || 'Failed to remove tag';
+            setError(errorMsg);
+            log$2(`removeTag: error for appid=${appid}: ${errorMsg}`, err);
         }
     };
     if (loading) {
@@ -577,7 +615,7 @@ const Settings = () => {
     };
     const syncLibrary = async () => {
         await logToBackend('info', '========================================');
-        await logToBackend('info', `syncLibrary button clicked - v${"1.1.2"}`);
+        await logToBackend('info', `syncLibrary button clicked - v${"1.1.3-debug"}`);
         await logToBackend('info', '========================================');
         try {
             setSyncing(true);
@@ -759,7 +797,7 @@ const Settings = () => {
             SP_REACT.createElement("div", { style: styles.about },
                 SP_REACT.createElement("p", null,
                     "Game Progress Tracker v",
-                    "1.1.2"),
+                    "1.1.3-debug"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };
@@ -1039,23 +1077,37 @@ const styles = {
 /**
  * React hook for managing game tags
  */
+// Debug logging helper
+const log$1 = (msg, data) => {
+    const logMsg = `[GameProgressTracker][useGameTag] ${msg}`;
+    if (data !== undefined) {
+        console.log(logMsg, data);
+    }
+    else {
+        console.log(logMsg);
+    }
+};
 function useGameTag(appid) {
     const [tag, setTag] = SP_REACT.useState(null);
     const [loading, setLoading] = SP_REACT.useState(true);
     const [error, setError] = SP_REACT.useState(null);
     SP_REACT.useEffect(() => {
+        log$1(`useEffect triggered for appid=${appid}`);
         fetchTag();
     }, [appid]);
     const fetchTag = async () => {
         try {
+            log$1(`fetchTag: calling get_game_tag for appid=${appid}`);
             setLoading(true);
             setError(null);
             const result = await call('get_game_tag', { appid });
+            log$1(`fetchTag: result for appid=${appid}:`, result);
             setTag(result.tag);
         }
         catch (err) {
-            setError(err?.message || 'Failed to fetch tag');
-            console.error('Error fetching tag:', err);
+            const errorMsg = err?.message || 'Failed to fetch tag';
+            setError(errorMsg);
+            log$1(`fetchTag: error for appid=${appid}: ${errorMsg}`, err);
         }
         finally {
             setLoading(false);
@@ -1124,11 +1176,22 @@ function useGameTag(appid) {
  * Game Progress Tracker - Main Plugin Entry
  * Decky Loader plugin for automatic game tagging
  */
+// Debug logging helper
+const log = (msg, data) => {
+    const logMsg = `[GameProgressTracker] ${msg}`;
+    if (data !== undefined) {
+        console.log(logMsg, data);
+    }
+    else {
+        console.log(logMsg);
+    }
+};
 /**
  * Extract appid from route path
  */
 function extractAppId(path) {
     const match = path.match(/\/library\/app\/(\d+)/);
+    log(`extractAppId: path="${path}", match=${match ? match[1] : 'null'}`);
     return match ? match[1] : null;
 }
 /**
@@ -1136,14 +1199,29 @@ function extractAppId(path) {
  * Displays tag badge and manages tag editor
  */
 const GamePageOverlay = ({ appid }) => {
-    const { tag, loading } = useGameTag(appid);
+    const { tag, loading, error } = useGameTag(appid);
     const [showManager, setShowManager] = SP_REACT.useState(false);
-    if (loading || !tag) {
+    SP_REACT.useEffect(() => {
+        log(`GamePageOverlay: appid=${appid}, loading=${loading}, tag=`, tag);
+        if (error) {
+            log(`GamePageOverlay: error=${error}`);
+        }
+    }, [appid, tag, loading, error]);
+    // Show overlay even if no tag (allows clicking to open TagManager)
+    if (loading) {
+        log(`GamePageOverlay: still loading for appid=${appid}`);
         return null;
     }
+    log(`GamePageOverlay: rendering for appid=${appid}, hasTag=${!!tag}, tagValue=${tag?.tag || 'none'}`);
     return (SP_REACT.createElement(SP_REACT.Fragment, null,
-        SP_REACT.createElement(GameTag, { tag: tag, onClick: () => setShowManager(true) }),
-        showManager && (SP_REACT.createElement(TagManager, { appid: appid, onClose: () => setShowManager(false) }))));
+        SP_REACT.createElement(GameTag, { tag: tag, onClick: () => {
+                log(`GameTag clicked for appid=${appid}`);
+                setShowManager(true);
+            } }),
+        showManager && (SP_REACT.createElement(TagManager, { appid: appid, onClose: () => {
+                log(`TagManager closed for appid=${appid}`);
+                setShowManager(false);
+            } }))));
 };
 /**
  * Main Plugin Definition

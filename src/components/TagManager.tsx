@@ -8,6 +8,16 @@ import { call } from '@decky/api';
 import { GameDetails } from '../types';
 import { TagIcon, TAG_ICON_COLORS } from './TagIcon';
 
+// Debug logging helper
+const log = (msg: string, data?: any) => {
+  const logMsg = `[GameProgressTracker][TagManager] ${msg}`;
+  if (data !== undefined) {
+    console.log(logMsg, data);
+  } else {
+    console.log(logMsg);
+  }
+};
+
 interface TagManagerProps {
   appid: string;
   onClose: () => void;
@@ -18,20 +28,26 @@ export const TagManager: FC<TagManagerProps> = ({ appid, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  log(`TagManager mounted for appid=${appid}`);
+
   useEffect(() => {
+    log(`TagManager useEffect: fetching details for appid=${appid}`);
     fetchDetails();
   }, [appid]);
 
   const fetchDetails = async () => {
     try {
+      log(`fetchDetails: calling get_game_details for appid=${appid}`);
       setLoading(true);
       setError(null);
 
       const result = await call<[{ appid: string }], GameDetails>('get_game_details', { appid });
+      log(`fetchDetails: result for appid=${appid}:`, result);
       setDetails(result);
     } catch (err: any) {
-      setError(err?.message || 'Failed to load game details');
-      console.error('Error fetching game details:', err);
+      const errorMsg = err?.message || 'Failed to load game details';
+      setError(errorMsg);
+      log(`fetchDetails: error for appid=${appid}: ${errorMsg}`, err);
     } finally {
       setLoading(false);
     }
@@ -39,31 +55,40 @@ export const TagManager: FC<TagManagerProps> = ({ appid, onClose }) => {
 
   const setTag = async (tag: string) => {
     try {
-      await call<[{ appid: string; tag: string }], void>('set_manual_tag', { appid, tag });
+      log(`setTag: calling set_manual_tag for appid=${appid}, tag=${tag}`);
+      const result = await call<[{ appid: string; tag: string }], { success: boolean; error?: string }>('set_manual_tag', { appid, tag });
+      log(`setTag: result for appid=${appid}:`, result);
       await fetchDetails();
     } catch (err: any) {
-      setError(err?.message || 'Failed to set tag');
-      console.error('Error setting tag:', err);
+      const errorMsg = err?.message || 'Failed to set tag';
+      setError(errorMsg);
+      log(`setTag: error for appid=${appid}: ${errorMsg}`, err);
     }
   };
 
   const resetToAuto = async () => {
     try {
-      await call<[{ appid: string }], void>('reset_to_auto_tag', { appid });
+      log(`resetToAuto: calling reset_to_auto_tag for appid=${appid}`);
+      const result = await call<[{ appid: string }], { success: boolean; error?: string }>('reset_to_auto_tag', { appid });
+      log(`resetToAuto: result for appid=${appid}:`, result);
       await fetchDetails();
     } catch (err: any) {
-      setError(err?.message || 'Failed to reset tag');
-      console.error('Error resetting tag:', err);
+      const errorMsg = err?.message || 'Failed to reset tag';
+      setError(errorMsg);
+      log(`resetToAuto: error for appid=${appid}: ${errorMsg}`, err);
     }
   };
 
   const removeTag = async () => {
     try {
-      await call<[{ appid: string }], void>('remove_tag', { appid });
+      log(`removeTag: calling remove_tag for appid=${appid}`);
+      const result = await call<[{ appid: string }], { success: boolean; error?: string }>('remove_tag', { appid });
+      log(`removeTag: result for appid=${appid}:`, result);
       await fetchDetails();
     } catch (err: any) {
-      setError(err?.message || 'Failed to remove tag');
-      console.error('Error removing tag:', err);
+      const errorMsg = err?.message || 'Failed to remove tag';
+      setError(errorMsg);
+      log(`removeTag: error for appid=${appid}: ${errorMsg}`, err);
     }
   };
 
