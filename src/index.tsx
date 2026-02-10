@@ -121,9 +121,10 @@ export default definePlugin(() => {
   log('=== Plugin initializing ===');
 
   // Patch the game library page to inject our tag component
-  log('Adding route patch for /library/app/:appId');
+  // Note: route param must be lowercase :appid (not :appId)
+  log('Adding route patch for /library/app/:appid');
   const gamePagePatch = routerHook.addPatch(
-    '/library/app/:appId',
+    '/library/app/:appid',
     (props: { path: string; children: ReactElement }) => {
       log(`Route patch called with path: ${props.path}`);
       const appid = extractAppId(props.path);
@@ -161,7 +162,7 @@ export default definePlugin(() => {
     ),
     onDismount() {
       // Clean up patches when plugin is unloaded
-      routerHook.removePatch('/library/app/:appId', gamePagePatch);
+      routerHook.removePatch('/library/app/:appid', gamePagePatch);
     }
   };
 });

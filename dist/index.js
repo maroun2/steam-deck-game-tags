@@ -1,4 +1,4 @@
-const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.6-debug","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.7-debug","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -629,7 +629,7 @@ const Settings = () => {
     };
     const syncLibrary = async () => {
         await logToBackend('info', '========================================');
-        await logToBackend('info', `syncLibrary button clicked - v${"1.1.6-debug"}`);
+        await logToBackend('info', `syncLibrary button clicked - v${"1.1.7-debug"}`);
         await logToBackend('info', '========================================');
         try {
             setSyncing(true);
@@ -812,7 +812,7 @@ const Settings = () => {
             SP_REACT.createElement("div", { style: styles.about },
                 SP_REACT.createElement("p", null,
                     "Game Progress Tracker v",
-                    "1.1.6-debug"),
+                    "1.1.7-debug"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };
@@ -1275,8 +1275,9 @@ const GamePageOverlay = ({ appid }) => {
 var index = definePlugin(() => {
     log('=== Plugin initializing ===');
     // Patch the game library page to inject our tag component
-    log('Adding route patch for /library/app/:appId');
-    const gamePagePatch = routerHook.addPatch('/library/app/:appId', (props) => {
+    // Note: route param must be lowercase :appid (not :appId)
+    log('Adding route patch for /library/app/:appid');
+    const gamePagePatch = routerHook.addPatch('/library/app/:appid', (props) => {
         log(`Route patch called with path: ${props.path}`);
         const appid = extractAppId(props.path);
         if (appid) {
@@ -1297,7 +1298,7 @@ var index = definePlugin(() => {
             SP_REACT.createElement("path", { d: "M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 18c-3.87 0-7-3.13-7-7V8.3l7-3.11 7 3.11V13c0 3.87-3.13 7-7 7zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z" }))),
         onDismount() {
             // Clean up patches when plugin is unloaded
-            routerHook.removePatch('/library/app/:appId', gamePagePatch);
+            routerHook.removePatch('/library/app/:appid', gamePagePatch);
         }
     };
 });
