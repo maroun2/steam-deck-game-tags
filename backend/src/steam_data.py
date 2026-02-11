@@ -179,11 +179,11 @@ class SteamDataService:
             return 0
 
     async def get_game_name(self, appid: str) -> str:
-        """Get game name from appmanifest files"""
+        """Get game name from appmanifest files or shortcuts.vdf for non-Steam games"""
         if not self.steam_path:
             return f"Unknown Game ({appid})"
 
-        # Check common steam library locations
+        # Check common steam library locations for Steam games
         library_folders = await self.get_library_folders()
 
         for library_path in library_folders:
@@ -197,6 +197,12 @@ class SteamDataService:
 
                 except Exception as e:
                     logger.error(f"Failed to parse appmanifest for {appid}: {e}")
+
+        # Check non-Steam games in shortcuts.vdf
+        non_steam_games = await self.get_non_steam_games()
+        for game in non_steam_games:
+            if game.get('appid') == appid:
+                return game.get('name', f"Unknown Game ({appid})")
 
         return f"Unknown Game ({appid})"
 
