@@ -1,4 +1,4 @@
-const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.20","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.21","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -104,8 +104,16 @@ const getAchievementData = async (appids) => {
     await logToBackend('info', `appAchievementProgressCache available: ${!!achievementCache}, type: ${typeof achievementCache}`);
     if (!achievementCache) {
         await logToBackend('error', 'appAchievementProgressCache not available - cannot get achievements!');
+        // Log what global objects ARE available for debugging
+        const windowKeys = Object.keys(window).filter(k => k.toLowerCase().includes('achievement') ||
+            k.toLowerCase().includes('app') ||
+            k.toLowerCase().includes('steam'));
+        await logToBackend('info', `Available window objects with achievement/app/steam: ${windowKeys.slice(0, 20).join(', ')}`);
         return achievementMap;
     }
+    // Log the cache object's methods/properties
+    const cacheKeys = Object.keys(achievementCache);
+    await logToBackend('info', `achievementCache keys: ${cacheKeys.join(', ')}`);
     // Check if GetAchievementProgress method exists
     await logToBackend('info', `GetAchievementProgress exists: ${typeof achievementCache.GetAchievementProgress}`);
     let successCount = 0;
@@ -115,6 +123,11 @@ const getAchievementData = async (appids) => {
     for (const appid of appids) {
         try {
             const progress = achievementCache.GetAchievementProgress(parseInt(appid));
+            // Log raw progress object for first few games
+            if (sampleLogs.length < 3 && progress) {
+                const progressKeys = Object.keys(progress);
+                await logToBackend('info', `RAW progress for ${appid}: keys=${progressKeys.join(',')}, JSON=${JSON.stringify(progress).slice(0, 200)}`);
+            }
             if (progress) {
                 // Progress object typically has nAchieved (unlocked) and nTotal (total)
                 const total = progress.nTotal || progress.total || 0;
@@ -131,11 +144,18 @@ const getAchievementData = async (appids) => {
                 // No achievement data - game might not have achievements
                 achievementMap[appid] = { total: 0, unlocked: 0 };
                 failCount++;
+                // Log first few failures
+                if (failCount <= 3) {
+                    await logToBackend('info', `No progress data for appid ${appid}, progress=${progress}`);
+                }
             }
         }
         catch (e) {
             achievementMap[appid] = { total: 0, unlocked: 0 };
             failCount++;
+            if (failCount <= 3) {
+                await logToBackend('error', `Exception for appid ${appid}: ${e?.message || e}`);
+            }
         }
     }
     // Log results after the loop
@@ -332,7 +352,7 @@ const Settings = () => {
     };
     const syncLibrary = async () => {
         await logToBackend('info', '========================================');
-        await logToBackend('info', `syncLibrary button clicked - v${"1.1.20"}`);
+        await logToBackend('info', `syncLibrary button clicked - v${"1.1.21"}`);
         await logToBackend('info', '========================================');
         try {
             setSyncing(true);
@@ -522,7 +542,7 @@ const Settings = () => {
             SP_REACT.createElement("div", { style: styles$1.about },
                 SP_REACT.createElement("p", null,
                     "Game Progress Tracker v",
-                    "1.1.20"),
+                    "1.1.21"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles$1.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };

@@ -43,8 +43,21 @@ const getAchievementData = async (appids: string[]): Promise<Record<string, Achi
 
   if (!achievementCache) {
     await logToBackend('error', 'appAchievementProgressCache not available - cannot get achievements!');
+
+    // Log what global objects ARE available for debugging
+    const windowKeys = Object.keys(window).filter(k =>
+      k.toLowerCase().includes('achievement') ||
+      k.toLowerCase().includes('app') ||
+      k.toLowerCase().includes('steam')
+    );
+    await logToBackend('info', `Available window objects with achievement/app/steam: ${windowKeys.slice(0, 20).join(', ')}`);
+
     return achievementMap;
   }
+
+  // Log the cache object's methods/properties
+  const cacheKeys = Object.keys(achievementCache);
+  await logToBackend('info', `achievementCache keys: ${cacheKeys.join(', ')}`);
 
   // Check if GetAchievementProgress method exists
   await logToBackend('info', `GetAchievementProgress exists: ${typeof achievementCache.GetAchievementProgress}`);
@@ -57,6 +70,13 @@ const getAchievementData = async (appids: string[]): Promise<Record<string, Achi
   for (const appid of appids) {
     try {
       const progress = achievementCache.GetAchievementProgress(parseInt(appid));
+
+      // Log raw progress object for first few games
+      if (sampleLogs.length < 3 && progress) {
+        const progressKeys = Object.keys(progress);
+        await logToBackend('info', `RAW progress for ${appid}: keys=${progressKeys.join(',')}, JSON=${JSON.stringify(progress).slice(0, 200)}`);
+      }
+
       if (progress) {
         // Progress object typically has nAchieved (unlocked) and nTotal (total)
         const total = progress.nTotal || progress.total || 0;
@@ -73,10 +93,18 @@ const getAchievementData = async (appids: string[]): Promise<Record<string, Achi
         // No achievement data - game might not have achievements
         achievementMap[appid] = { total: 0, unlocked: 0 };
         failCount++;
+
+        // Log first few failures
+        if (failCount <= 3) {
+          await logToBackend('info', `No progress data for appid ${appid}, progress=${progress}`);
+        }
       }
-    } catch (e) {
+    } catch (e: any) {
       achievementMap[appid] = { total: 0, unlocked: 0 };
       failCount++;
+      if (failCount <= 3) {
+        await logToBackend('error', `Exception for appid ${appid}: ${e?.message || e}`);
+      }
     }
   }
 
