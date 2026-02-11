@@ -92,15 +92,17 @@ export const GameTagBadge: FC<GameTagBadgeProps> = ({ appid }) => {
     refetch();
   };
 
-  // Container style - absolute positioning to overlay on header image
+  // Container style - use negative margin to overlay on header image
   const containerStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: '16px',
-    left: '16px',
+    position: 'relative',
+    marginTop: '-80px',  // Pull up into the header area
+    marginLeft: '16px',
+    marginBottom: '16px',
     zIndex: 10,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
+    pointerEvents: 'auto',
   };
 
   return (

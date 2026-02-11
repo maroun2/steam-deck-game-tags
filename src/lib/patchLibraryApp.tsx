@@ -76,16 +76,16 @@ function patchLibraryApp() {
               )?.props?.children
             ],
             (_: Array<Record<string, unknown>>, ret?: ReactElement) => {
-              // Find the Header container where we'll inject our badge overlay
-              const header = findInReactTree(
+              // Find the inner container where we'll inject our badge
+              const container = findInReactTree(
                 ret,
                 (x: ReactElement) =>
                   Array.isArray(x?.props?.children) &&
-                  x?.props?.className?.includes(appDetailsClasses.Header)
+                  x?.props?.className?.includes(appDetailsClasses.InnerContainer)
               );
 
-              if (typeof header !== 'object') {
-                log('Header not found, returning original');
+              if (typeof container !== 'object') {
+                log('Container not found, returning original');
                 return ret;
               }
 
@@ -93,10 +93,12 @@ function patchLibraryApp() {
               const appid = getAppIdFromUrl();
 
               if (appid) {
-                log(`Injecting GameTagBadge for appid=${appid} into Header`);
+                log(`Injecting GameTagBadge for appid=${appid}`);
 
-                // Inject our badge component into the header (will use absolute positioning)
-                header.props.children.push(
+                // Inject our badge component at position 0 (first child, will use absolute positioning)
+                container.props.children.splice(
+                  0,
+                  0,
                   <GameTagBadge key="game-progress-tag" appid={appid} />
                 );
               } else {

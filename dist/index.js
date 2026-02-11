@@ -1,4 +1,4 @@
-const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.16","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.17","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -279,7 +279,7 @@ const Settings = () => {
     };
     const syncLibrary = async () => {
         await logToBackend('info', '========================================');
-        await logToBackend('info', `syncLibrary button clicked - v${"1.1.16"}`);
+        await logToBackend('info', `syncLibrary button clicked - v${"1.1.17"}`);
         await logToBackend('info', '========================================');
         try {
             setSyncing(true);
@@ -460,7 +460,7 @@ const Settings = () => {
             SP_REACT.createElement("div", { style: styles$1.about },
                 SP_REACT.createElement("p", null,
                     "Game Progress Tracker v",
-                    "1.1.16"),
+                    "1.1.17"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles$1.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };
@@ -1279,15 +1279,17 @@ const GameTagBadge = ({ appid }) => {
         setShowManager(false);
         refetch();
     };
-    // Container style - absolute positioning to overlay on header image
+    // Container style - use negative margin to overlay on header image
     const containerStyle = {
-        position: 'absolute',
-        top: '16px',
-        left: '16px',
+        position: 'relative',
+        marginTop: '-80px', // Pull up into the header area
+        marginLeft: '16px',
+        marginBottom: '16px',
         zIndex: 10,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
+        pointerEvents: 'auto',
     };
     return (SP_REACT.createElement("div", { style: containerStyle },
         tag && tag.tag ? (SP_REACT.createElement("div", { style: { position: 'relative', display: 'inline-flex' } },
@@ -1348,19 +1350,19 @@ function patchLibraryApp() {
                 const patchHandler = DFL.createReactTreePatcher([
                     (tree) => DFL.findInReactTree(tree, (x) => x?.props?.children?.props?.overview)?.props?.children
                 ], (_, ret) => {
-                    // Find the Header container where we'll inject our badge overlay
-                    const header = DFL.findInReactTree(ret, (x) => Array.isArray(x?.props?.children) &&
-                        x?.props?.className?.includes(DFL.appDetailsClasses.Header));
-                    if (typeof header !== 'object') {
-                        log$1('Header not found, returning original');
+                    // Find the inner container where we'll inject our badge
+                    const container = DFL.findInReactTree(ret, (x) => Array.isArray(x?.props?.children) &&
+                        x?.props?.className?.includes(DFL.appDetailsClasses.InnerContainer));
+                    if (typeof container !== 'object') {
+                        log$1('Container not found, returning original');
                         return ret;
                     }
                     // Get appid from URL since we're inside the render
                     const appid = getAppIdFromUrl();
                     if (appid) {
-                        log$1(`Injecting GameTagBadge for appid=${appid} into Header`);
-                        // Inject our badge component into the header (will use absolute positioning)
-                        header.props.children.push(SP_REACT.createElement(GameTagBadge, { key: "game-progress-tag", appid: appid }));
+                        log$1(`Injecting GameTagBadge for appid=${appid}`);
+                        // Inject our badge component at position 0 (first child, will use absolute positioning)
+                        container.props.children.splice(0, 0, SP_REACT.createElement(GameTagBadge, { key: "game-progress-tag", appid: appid }));
                     }
                     else {
                         log$1('Could not determine appid');
