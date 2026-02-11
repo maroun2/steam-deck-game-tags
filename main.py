@@ -666,7 +666,11 @@ class Plugin:
             for tag_entry in all_tags:
                 appid = tag_entry['appid']
                 stats = await self.db.get_game_stats(appid)
-                game_name = stats.get('game_name', f'Game {appid}') if stats else f'Game {appid}'
+                game_name = stats.get('game_name') if stats else None
+
+                # If no name in stats, try to get it from Steam/shortcuts
+                if not game_name or game_name.startswith('Unknown Game') or game_name.startswith('Game '):
+                    game_name = await self.steam_service.get_game_name(appid)
 
                 result.append({
                     'appid': appid,
