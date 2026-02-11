@@ -216,6 +216,17 @@ class Plugin:
             return str(appid.get('appid', appid))
         return str(appid)
 
+    def _extract_params(self, first_arg, **kwargs) -> Dict[str, Any]:
+        """Extract parameters from Decky API call.
+        Decky may pass all params as a single dict in first_arg."""
+        if isinstance(first_arg, dict):
+            # All params came as a dict in first argument
+            return first_arg
+        # Traditional separate arguments
+        result = {'appid': str(first_arg)} if first_arg is not None else {}
+        result.update(kwargs)
+        return result
+
     # ==================== Plugin API Methods ====================
 
     async def get_game_tag(self, appid) -> Dict[str, Any]:
@@ -234,14 +245,20 @@ class Plugin:
             logger.error(traceback.format_exc())
             return {"success": False, "error": str(e)}
 
-    async def set_manual_tag(self, appid, tag: str = None) -> Dict[str, bool]:
+    async def set_manual_tag(self, appid_or_params, tag: str = None) -> Dict[str, bool]:
         """Manually set/override tag"""
-        appid = self._extract_appid(appid)
-        # Handle case where both params come in first arg as dict
-        if tag is None and isinstance(appid, str):
-            # This shouldn't happen after extraction, but safety check
-            return {"success": False, "error": "Missing tag parameter"}
+        # Extract params - Decky may pass {appid, tag} as single dict
+        params = self._extract_params(appid_or_params, tag=tag)
+        appid = str(params.get('appid', ''))
+        tag = params.get('tag')
+
         logger.info(f"=== set_manual_tag called: appid={appid}, tag={tag} ===")
+
+        if not appid:
+            return {"success": False, "error": "Missing appid parameter"}
+        if not tag:
+            return {"success": False, "error": "Missing tag parameter"}
+
         try:
             # Validate tag
             valid_tags = ['completed', 'in_progress', 'mastered']
