@@ -10,6 +10,7 @@ import { definePlugin, routerHook } from '@decky/api';
 import React from 'react';
 import { Settings } from './components/Settings';
 import patchLibraryApp from './lib/patchLibraryApp';
+import { syncLibraryWithFrontendData } from './lib/syncUtils';
 
 // Debug logging helper
 const log = (msg: string, data?: any) => {
@@ -37,6 +38,18 @@ export default definePlugin(() => {
   } catch (error) {
     log('Failed to register library app patch:', error);
   }
+
+  // Trigger sync with frontend data (replaces backend auto-sync)
+  // This uses Steam's frontend API for real-time playtime and achievement data
+  log('Triggering initial sync with frontend data...');
+  (async () => {
+    try {
+      const result = await syncLibraryWithFrontendData();
+      log('Initial sync result:', result);
+    } catch (err) {
+      log('Initial sync failed:', err);
+    }
+  })();
 
   return {
     name: 'Game Progress Tracker',

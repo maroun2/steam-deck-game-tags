@@ -97,16 +97,9 @@ class Plugin:
 
         logger.info("Plugin initialized successfully")
 
-        # Auto-run sync on startup for testing
-        # Note: Use Plugin.method(self) pattern due to Decky Loader bug #509
-        logger.info("=== AUTO-RUNNING sync_library for testing ===")
-        try:
-            result = await Plugin.sync_library(self)
-            logger.info(f"Auto-sync result: {result}")
-        except Exception as e:
-            logger.error(f"Auto-sync failed: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+        # Note: Auto-sync removed. Sync is now triggered by frontend after plugin loads.
+        # This ensures we use real-time playtime/achievement data from Steam's frontend API.
+        logger.info("Plugin ready. Sync will be triggered by frontend with real-time data.")
 
     async def _unload(self):
         """Cleanup on plugin unload"""

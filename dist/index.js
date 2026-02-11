@@ -1,4 +1,4 @@
-const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.21","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
+const manifest = {"name":"Game Progress Tracker","author":"Maron","version":"1.1.22","api_version":1,"flags":["_root"],"publish":{"tags":["library","achievements","statistics","enhancement"],"description":"Automatic game tagging based on achievements, playtime, and completion time. Track your progress with visual badges in the Steam library.","image":"https://opengraph.githubassets.com/1/SteamDeckHomebrew/decky-loader"}};
 const API_VERSION = 2;
 if (!manifest?.name) {
     throw new Error('[@decky/api]: Failed to find plugin manifest.');
@@ -77,19 +77,17 @@ const TagIcon = ({ type, size = 24, className }) => {
 };
 
 /**
- * Settings Component
- * Plugin settings and configuration panel
+ * Sync Utilities
+ * Shared functions for syncing game data using Steam's frontend API
  */
-/**
- * Log to both console and backend (for debugging without CEF)
- */
-const logToBackend = async (level, message) => {
-    console.log(`[GameProgressTracker] ${message}`);
-    try {
-        await call('log_frontend', { level, message });
+// Debug logging helper
+const log$6 = (msg, data) => {
+    const logMsg = `[GameProgressTracker][syncUtils] ${msg}`;
+    if (data !== undefined) {
+        console.log(logMsg, data);
     }
-    catch (e) {
-        // Silently fail if backend logging fails
+    else {
+        console.log(logMsg);
     }
 };
 /**
@@ -97,25 +95,24 @@ const logToBackend = async (level, message) => {
  * Uses window.appAchievementProgressCache which is Steam's internal achievement cache
  */
 const getAchievementData = async (appids) => {
-    await logToBackend('info', `getAchievementData called with ${appids.length} appids`);
+    log$6(`getAchievementData called with ${appids.length} appids`);
     const achievementMap = {};
     // Access Steam's global achievement progress cache
     const achievementCache = window.appAchievementProgressCache;
-    await logToBackend('info', `appAchievementProgressCache available: ${!!achievementCache}, type: ${typeof achievementCache}`);
+    log$6(`appAchievementProgressCache available: ${!!achievementCache}`);
     if (!achievementCache) {
-        await logToBackend('error', 'appAchievementProgressCache not available - cannot get achievements!');
+        log$6('appAchievementProgressCache not available - cannot get achievements!');
         // Log what global objects ARE available for debugging
         const windowKeys = Object.keys(window).filter(k => k.toLowerCase().includes('achievement') ||
             k.toLowerCase().includes('app') ||
             k.toLowerCase().includes('steam'));
-        await logToBackend('info', `Available window objects with achievement/app/steam: ${windowKeys.slice(0, 20).join(', ')}`);
+        log$6(`Available window objects: ${windowKeys.slice(0, 20).join(', ')}`);
         return achievementMap;
     }
     // Log the cache object's methods/properties
     const cacheKeys = Object.keys(achievementCache);
-    await logToBackend('info', `achievementCache keys: ${cacheKeys.join(', ')}`);
-    // Check if GetAchievementProgress method exists
-    await logToBackend('info', `GetAchievementProgress exists: ${typeof achievementCache.GetAchievementProgress}`);
+    log$6(`achievementCache keys: ${cacheKeys.join(', ')}`);
+    log$6(`GetAchievementProgress exists: ${typeof achievementCache.GetAchievementProgress}`);
     let successCount = 0;
     let failCount = 0;
     let withAchievements = 0;
@@ -126,7 +123,7 @@ const getAchievementData = async (appids) => {
             // Log raw progress object for first few games
             if (sampleLogs.length < 3 && progress) {
                 const progressKeys = Object.keys(progress);
-                await logToBackend('info', `RAW progress for ${appid}: keys=${progressKeys.join(',')}, JSON=${JSON.stringify(progress).slice(0, 200)}`);
+                log$6(`RAW progress for ${appid}: keys=${progressKeys.join(',')}, JSON=${JSON.stringify(progress).slice(0, 200)}`);
             }
             if (progress) {
                 // Progress object typically has nAchieved (unlocked) and nTotal (total)
@@ -144,25 +141,18 @@ const getAchievementData = async (appids) => {
                 // No achievement data - game might not have achievements
                 achievementMap[appid] = { total: 0, unlocked: 0 };
                 failCount++;
-                // Log first few failures
-                if (failCount <= 3) {
-                    await logToBackend('info', `No progress data for appid ${appid}, progress=${progress}`);
-                }
             }
         }
         catch (e) {
             achievementMap[appid] = { total: 0, unlocked: 0 };
             failCount++;
-            if (failCount <= 3) {
-                await logToBackend('error', `Exception for appid ${appid}: ${e?.message || e}`);
-            }
         }
     }
-    // Log results after the loop
-    for (const log of sampleLogs) {
-        await logToBackend('info', `Achievement sample - ${log}`);
+    // Log results
+    for (const logMsg of sampleLogs) {
+        log$6(`Achievement sample - ${logMsg}`);
     }
-    await logToBackend('info', `getAchievementData results: success=${successCount}, noData=${failCount}, withAchievements=${withAchievements}`);
+    log$6(`getAchievementData results: success=${successCount}, noData=${failCount}, withAchievements=${withAchievements}`);
     return achievementMap;
 };
 /**
@@ -170,23 +160,20 @@ const getAchievementData = async (appids) => {
  * Uses window.appStore which is Steam's internal game data cache
  */
 const getPlaytimeData = async (appids) => {
-    await logToBackend('info', `getPlaytimeData called with ${appids.length} appids`);
+    log$6(`getPlaytimeData called with ${appids.length} appids`);
     const playtimeMap = {};
-    // Access Steam's global appStore (typed by @decky/ui)
+    // Access Steam's global appStore
     const appStore = window.appStore;
-    await logToBackend('info', `appStore available: ${!!appStore}, type: ${typeof appStore}`);
+    log$6(`appStore available: ${!!appStore}`);
     if (!appStore) {
-        await logToBackend('error', 'appStore not available - cannot get playtime!');
+        log$6('appStore not available - cannot get playtime!');
         return playtimeMap;
     }
-    // Check if GetAppOverviewByAppID method exists
-    await logToBackend('info', `GetAppOverviewByAppID exists: ${typeof appStore.GetAppOverviewByAppID}`);
+    log$6(`GetAppOverviewByAppID exists: ${typeof appStore.GetAppOverviewByAppID}`);
     let successCount = 0;
     let failCount = 0;
     let withPlaytime = 0;
-    const failedAppids = [];
     const sampleLogs = [];
-    // Synchronous loop - no awaits inside to avoid issues
     for (const appid of appids) {
         try {
             const overview = appStore.GetAppOverviewByAppID(parseInt(appid));
@@ -196,36 +183,78 @@ const getPlaytimeData = async (appids) => {
                 successCount++;
                 if (playtime > 0)
                     withPlaytime++;
-                // Collect first few for logging later
                 if (sampleLogs.length < 3) {
                     sampleLogs.push(`appid ${appid}: playtime=${playtime}min, name=${overview.display_name || 'unknown'}`);
                 }
             }
             else {
                 failCount++;
-                if (failedAppids.length < 5) {
-                    failedAppids.push(appid);
-                }
             }
         }
         catch (e) {
             failCount++;
-            if (failedAppids.length < 5) {
-                failedAppids.push(appid);
-            }
         }
     }
-    // Log results after the loop
-    for (const log of sampleLogs) {
-        await logToBackend('info', `Sample - ${log}`);
+    // Log results
+    for (const logMsg of sampleLogs) {
+        log$6(`Playtime sample - ${logMsg}`);
     }
-    if (failedAppids.length > 0) {
-        await logToBackend('info', `Failed appids (first 5): ${failedAppids.join(', ')}`);
-    }
-    await logToBackend('info', `getPlaytimeData results: success=${successCount}, failed=${failCount}, withPlaytime=${withPlaytime}`);
-    await logToBackend('info', `playtimeMap size: ${Object.keys(playtimeMap).length}`);
-    await logToBackend('info', `playtimeMap keys sample: ${Object.keys(playtimeMap).slice(0, 10).join(', ')}`);
+    log$6(`getPlaytimeData results: success=${successCount}, failed=${failCount}, withPlaytime=${withPlaytime}`);
     return playtimeMap;
+};
+/**
+ * Sync library with frontend data (playtime + achievements from Steam API)
+ * This is the main sync function that should be used instead of backend-only sync
+ */
+const syncLibraryWithFrontendData = async () => {
+    log$6('Starting sync with frontend data...');
+    try {
+        // Step 1: Get game list from backend
+        log$6('Step 1: Getting game list from backend...');
+        const gamesResult = await call('get_all_games');
+        if (!gamesResult.success || !gamesResult.games) {
+            log$6('Failed to get game list:', gamesResult.error);
+            return { success: false, error: gamesResult.error || 'Failed to get game list' };
+        }
+        const appids = gamesResult.games.map(g => g.appid);
+        log$6(`Got ${appids.length} games from backend`);
+        // Step 2: Get playtime from Steam frontend API
+        log$6('Step 2: Getting playtime data...');
+        const playtimeData = await getPlaytimeData(appids);
+        const gamesWithPlaytime = Object.values(playtimeData).filter(v => v > 0).length;
+        log$6(`Got playtime for ${gamesWithPlaytime}/${appids.length} games`);
+        // Step 3: Get achievements from Steam frontend API
+        log$6('Step 3: Getting achievement data...');
+        const achievementData = await getAchievementData(appids);
+        const gamesWithAchievements = Object.values(achievementData).filter(v => v.total > 0).length;
+        log$6(`Got achievements for ${gamesWithAchievements}/${appids.length} games`);
+        // Step 4: Send to backend for processing
+        log$6('Step 4: Sending to backend for sync...');
+        const result = await call('sync_library_with_playtime', { playtime_data: playtimeData, achievement_data: achievementData });
+        log$6(`Sync complete: ${result.synced}/${result.total} games, ${result.errors || 0} errors`);
+        return result;
+    }
+    catch (e) {
+        log$6('Sync failed with exception:', e);
+        return { success: false, error: e?.message || 'Unknown error' };
+    }
+};
+
+/**
+ * Settings Component
+ * Plugin settings and configuration panel
+ */
+/**
+ * Log to both console and backend (for debugging without CEF)
+ */
+const logToBackend = async (level, message) => {
+    console.log(`[GameProgressTracker] ${message}`);
+    try {
+        await call('log_frontend', { level, message });
+    }
+    catch (e) {
+        // Silently fail if backend logging fails
+    }
 };
 // Tag color mapping
 const TAG_COLORS = {
@@ -352,7 +381,7 @@ const Settings = () => {
     };
     const syncLibrary = async () => {
         await logToBackend('info', '========================================');
-        await logToBackend('info', `syncLibrary button clicked - v${"1.1.21"}`);
+        await logToBackend('info', `syncLibrary button clicked - v${"1.1.22"}`);
         await logToBackend('info', '========================================');
         try {
             setSyncing(true);
@@ -542,7 +571,7 @@ const Settings = () => {
             SP_REACT.createElement("div", { style: styles$1.about },
                 SP_REACT.createElement("p", null,
                     "Game Progress Tracker v",
-                    "1.1.21"),
+                    "1.1.22"),
                 SP_REACT.createElement("p", null, "Automatic game tagging based on achievements, playtime, and completion time."),
                 SP_REACT.createElement("p", { style: styles$1.smallText }, "Data from HowLongToBeat \u2022 Steam achievement system")))));
 };
@@ -1551,6 +1580,18 @@ var index = definePlugin(() => {
     catch (error) {
         log('Failed to register library app patch:', error);
     }
+    // Trigger sync with frontend data (replaces backend auto-sync)
+    // This uses Steam's frontend API for real-time playtime and achievement data
+    log('Triggering initial sync with frontend data...');
+    (async () => {
+        try {
+            const result = await syncLibraryWithFrontendData();
+            log('Initial sync result:', result);
+        }
+        catch (err) {
+            log('Initial sync failed:', err);
+        }
+    })();
     return {
         name: 'Game Progress Tracker',
         titleView: SP_REACT.createElement("div", { className: DFL.staticClasses.Title }, "Game Progress Tracker"),
