@@ -5,7 +5,7 @@
 
 import React, { FC, useState, useEffect } from 'react';
 import { call, toaster } from '@decky/api';
-import { Navigation } from '@decky/ui';
+import { PanelSection, PanelSectionRow, ButtonItem, Focusable, Navigation } from '@decky/ui';
 import { PluginSettings, SyncResult, TagStatistics, TaggedGame, GameListResult } from '../types';
 import { TagIcon, TagType } from './TagIcon';
 import { getAchievementData, getPlaytimeData, getGameNames, getAllOwnedGameIds, AchievementData } from '../lib/syncUtils';
@@ -444,9 +444,9 @@ export const Settings: FC = () => {
 
               return (
                 <div key={tagType} style={styles.tagSection}>
-                  <button
-                    onClick={() => toggleSection(tagType)}
+                  <Focusable
                     style={styles.tagSectionHeader}
+                    onActivate={() => toggleSection(tagType)}
                   >
                     <div style={styles.tagSectionLeft}>
                       <TagIcon type={tagType} size={18} />
@@ -460,7 +460,7 @@ export const Settings: FC = () => {
                         {isExpanded ? '−' : '+'}
                       </span>
                     </div>
-                  </button>
+                  </Focusable>
 
                   {isExpanded && (
                     <div style={styles.tagDescription}>
@@ -473,12 +473,12 @@ export const Settings: FC = () => {
                   )}
 
                   {isExpanded && games.length > 0 && (
-                    <div style={styles.gameList}>
+                    <Focusable style={styles.gameList} flow-children="down">
                       {games.map((game) => (
-                        <div
+                        <Focusable
                           key={game.appid}
                           style={styles.gameItem}
-                          onClick={() => navigateToGame(game.appid)}
+                          onActivate={() => navigateToGame(game.appid)}
                         >
                           <span
                             style={{
@@ -490,9 +490,9 @@ export const Settings: FC = () => {
                           {game.is_manual && (
                             <span style={styles.manualBadge}>manual</span>
                           )}
-                        </div>
+                        </Focusable>
                       ))}
-                    </div>
+                    </Focusable>
                   )}
 
                   {isExpanded && games.length === 0 && !loadingBacklog && (
@@ -506,18 +506,20 @@ export const Settings: FC = () => {
       </div>
 
       {/* Sync Button - always visible */}
-      <div style={styles.section}>
-        <button
-          onClick={syncLibrary}
-          disabled={syncing || loading}
-          style={syncing ? styles.buttonDisabled : styles.button}
-        >
-          {syncing ? 'Syncing...' : 'Sync Entire Library'}
-        </button>
+      <PanelSection>
+        <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            onClick={syncLibrary}
+            disabled={syncing || loading}
+          >
+            {syncing ? 'Syncing...' : 'Sync Entire Library'}
+          </ButtonItem>
+        </PanelSectionRow>
         <div style={styles.hint}>
           Sync may take several minutes for large libraries
         </div>
-      </div>
+      </PanelSection>
 
       {/* About */}
       <div style={styles.section}>
@@ -633,7 +635,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 12px',
     backgroundColor: '#252525',
     borderRadius: '4px',
-    cursor: 'pointer',
     transition: 'background-color 0.2s',
   },
   smallDot: {
@@ -766,7 +767,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '0',
     color: 'white',
     fontSize: '14px',
-    cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',

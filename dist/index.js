@@ -906,7 +906,7 @@ const Settings = () => {
                 const count = getCategoryCount(tagType);
                 const isExpanded = expandedSections[tagType];
                 return (SP_REACT.createElement("div", { key: tagType, style: styles$1.tagSection },
-                    SP_REACT.createElement("button", { onClick: () => toggleSection(tagType), style: styles$1.tagSectionHeader },
+                    SP_REACT.createElement(DFL.Focusable, { style: styles$1.tagSectionHeader, onActivate: () => toggleSection(tagType) },
                         SP_REACT.createElement("div", { style: styles$1.tagSectionLeft },
                             SP_REACT.createElement(TagIcon, { type: tagType, size: 18 }),
                             SP_REACT.createElement("span", { style: styles$1.tagSectionTitle }, tagLabels[tagType])),
@@ -915,7 +915,7 @@ const Settings = () => {
                             SP_REACT.createElement("span", { style: styles$1.expandIcon }, isExpanded ? '−' : '+'))),
                     isExpanded && (SP_REACT.createElement("div", { style: styles$1.tagDescription }, tagDescriptions[tagType])),
                     isExpanded && isBacklog && loadingBacklog && (SP_REACT.createElement("div", { style: styles$1.emptySection }, "Loading backlog games...")),
-                    isExpanded && games.length > 0 && (SP_REACT.createElement("div", { style: styles$1.gameList }, games.map((game) => (SP_REACT.createElement("div", { key: game.appid, style: styles$1.gameItem, onClick: () => navigateToGame(game.appid) },
+                    isExpanded && games.length > 0 && (SP_REACT.createElement(DFL.Focusable, { style: styles$1.gameList, "flow-children": "down" }, games.map((game) => (SP_REACT.createElement(DFL.Focusable, { key: game.appid, style: styles$1.gameItem, onActivate: () => navigateToGame(game.appid) },
                         SP_REACT.createElement("span", { style: {
                                 ...styles$1.smallDot,
                                 backgroundColor: TAG_COLORS[game.tag],
@@ -924,8 +924,9 @@ const Settings = () => {
                         game.is_manual && (SP_REACT.createElement("span", { style: styles$1.manualBadge }, "manual"))))))),
                     isExpanded && games.length === 0 && !loadingBacklog && (SP_REACT.createElement("div", { style: styles$1.emptySection }, "No games with this tag"))));
             })))),
-        SP_REACT.createElement("div", { style: styles$1.section },
-            SP_REACT.createElement("button", { onClick: syncLibrary, disabled: syncing || loading, style: syncing ? styles$1.buttonDisabled : styles$1.button }, syncing ? 'Syncing...' : 'Sync Entire Library'),
+        SP_REACT.createElement(DFL.PanelSection, null,
+            SP_REACT.createElement(DFL.PanelSectionRow, null,
+                SP_REACT.createElement(DFL.ButtonItem, { layout: "below", onClick: syncLibrary, disabled: syncing || loading }, syncing ? 'Syncing...' : 'Sync Entire Library')),
             SP_REACT.createElement("div", { style: styles$1.hint }, "Sync may take several minutes for large libraries")),
         SP_REACT.createElement("div", { style: styles$1.section },
             SP_REACT.createElement("h3", { style: styles$1.sectionTitle }, "About"),
@@ -1035,7 +1036,6 @@ const styles$1 = {
         padding: '8px 12px',
         backgroundColor: '#252525',
         borderRadius: '4px',
-        cursor: 'pointer',
         transition: 'background-color 0.2s',
     },
     smallDot: {
@@ -1168,7 +1168,6 @@ const styles$1 = {
         borderRadius: '0',
         color: 'white',
         fontSize: '14px',
-        cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
