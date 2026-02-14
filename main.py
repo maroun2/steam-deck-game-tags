@@ -894,18 +894,33 @@ class Plugin:
         else:
             logger.info(f"  HLTB: no data")
 
+        # Calculate tag (but don't override manual tags)
+        # Skip tag calculation for hidden games (unless manually tagged)
+        tag_changed = False
+        calculated_tag = None
+
+        if is_manual:
+            logger.info(f"  Skipping tag calculation (manual override)")
+        elif is_hidden:
+            logger.info(f"  Skipping tag calculation (hidden non-Steam app)")
+        else:
+            calculated_tag = await Plugin.calculate_auto_tag(self, appid)
+            logger.info(f"  Calculated tag: {calculated_tag or 'none'}")
+
         # Check for automatic "dropped" tagging
         # Only auto-tag as dropped if:
         # 1. Game was played before (rt_last_time_played exists and > 0)
         # 2. Not played for over 1 year
         # 3. Not manually tagged
         # 4. Not hidden
+        # 5. Calculated tag is None or "in_progress" (don't override completed/mastered)
         import time
         should_check_dropped = (
             rt_last_time_played and
             rt_last_time_played > 0 and
             not is_manual and
-            not is_hidden
+            not is_hidden and
+            calculated_tag in [None, 'in_progress']
         )
 
         if should_check_dropped:
@@ -914,34 +929,21 @@ class Plugin:
             days_since_played = (current_time - rt_last_time_played) / (24 * 60 * 60)
 
             if current_time - rt_last_time_played > one_year_seconds:
-                # Auto-tag as dropped
+                # Auto-tag as dropped (overrides "in_progress" or no tag)
                 current_tag_value = current_tag.get('tag') if current_tag else None
                 if current_tag_value != 'dropped':
                     await self.db.set_tag(appid, 'dropped', is_manual=False)
                     logger.info(f"  -> Auto-tagged as 'dropped' (not played for {days_since_played:.0f} days)")
+                    tag_changed = True
+                    calculated_tag = 'dropped'  # Don't apply calculated tag below
 
-        # Calculate tag (but don't override manual tags or dropped tags)
-        # Skip tag calculation for hidden games (unless manually tagged)
-        tag_changed = False
-        if is_manual:
-            logger.info(f"  Skipping tag calculation (manual override)")
-        elif is_hidden:
-            logger.info(f"  Skipping tag calculation (hidden non-Steam app)")
-        else:
-            # Check if already dropped - don't recalculate if dropped
+        # Apply calculated tag only if not dropped
+        if calculated_tag and calculated_tag != 'dropped' and not is_manual and not is_hidden:
             current_tag_value = current_tag.get('tag') if current_tag else None
-            if current_tag_value == 'dropped':
-                logger.info(f"  Skipping tag calculation (already dropped)")
-            else:
-                new_tag = await Plugin.calculate_auto_tag(self, appid)
-                logger.info(f"  Calculated tag: {new_tag or 'none'}")
-
-                # Update if changed or doesn't exist
-                if new_tag:
-                    if new_tag != current_tag_value:
-                        await self.db.set_tag(appid, new_tag, is_manual=False)
-                        logger.info(f"  -> Tag set: {new_tag}")
-                        tag_changed = True
+            if calculated_tag != current_tag_value:
+                await self.db.set_tag(appid, calculated_tag, is_manual=False)
+                logger.info(f"  -> Tag set: {calculated_tag}")
+                tag_changed = True
 
         result = await self.db.get_tag(appid) or {}
         result['tag_changed'] = tag_changed
