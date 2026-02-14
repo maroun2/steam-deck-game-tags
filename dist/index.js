@@ -628,19 +628,9 @@ const Settings = () => {
             if (gamesResult.success && gamesResult.games) {
                 const newGamesStr = JSON.stringify(gamesResult.games.map(g => g.appid).sort());
                 if (newGamesStr !== prevGamesRef.current) {
-                    const prevCount = prevGamesRef.current ? JSON.parse(prevGamesRef.current).length : 0;
-                    const newCount = gamesResult.games.length;
-                    const newGamesCount = newCount - prevCount;
                     prevGamesRef.current = newGamesStr;
                     setTaggedGames(gamesResult.games);
-                    // Show toast if new games were discovered (and we had previous data)
-                    if (prevCount > 0 && newGamesCount > 0) {
-                        toaster.toast({
-                            title: 'New Games Tagged',
-                            body: `${newGamesCount} new game${newGamesCount > 1 ? 's' : ''} discovered!`,
-                            duration: 3000,
-                        });
-                    }
+                    // No notification here - notifications only shown after explicit sync complete
                 }
             }
         }
@@ -827,57 +817,17 @@ const Settings = () => {
             setMessage(`Getting game names for ${appids.length} games...`);
             const gameNames = await getGameNames(appids);
             await logToBackend('info', `Step 2.6 complete: Got names for ${Object.keys(gameNames).length}/${appids.length} games`);
-            // Step 3: Sync in batches - backend tracks new tags for notifications
-            await logToBackend('info', 'Step 3: Syncing in batches...');
-            const BATCH_SIZE = 50; // Process 50 games at a time
-            let totalSynced = 0;
-            let totalNewTags = 0;
-            let totalErrors = 0;
-            for (let i = 0; i < appids.length; i += BATCH_SIZE) {
-                const batchAppids = appids.slice(i, i + BATCH_SIZE);
-                const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-                const totalBatches = Math.ceil(appids.length / BATCH_SIZE);
-                // Progress message now handled by universal polling via get_sync_progress
-                await logToBackend('info', `Syncing batch ${batchNum}/${totalBatches}: ${batchAppids.length} games`);
-                // Get data for this batch only
-                const batchGameData = {};
-                const batchAchievements = {};
-                const batchNames = {};
-                for (const appid of batchAppids) {
-                    batchGameData[appid] = gameData[appid] || { playtime_minutes: 0, rt_last_time_played: null };
-                    batchAchievements[appid] = achievementData[appid] || { total: 0, unlocked: 0, percentage: 0, all_unlocked: false };
-                    if (gameNames[appid]) {
-                        batchNames[appid] = gameNames[appid];
-                    }
-                }
-                const result = await call('sync_library_with_playtime', { game_data: batchGameData, achievement_data: batchAchievements, game_names: batchNames });
-                if (result.success) {
-                    totalSynced += result.synced || 0;
-                    totalNewTags += result.new_tags || 0;
-                    totalErrors += result.errors || 0;
-                    // Update UI after each batch
-                    await smartUpdateUI();
-                    await logToBackend('info', `Batch ${batchNum} complete: ${result.synced} synced, ${result.new_tags || 0} new tags, ${result.errors || 0} errors`);
-                    // Show toast for new tags in this batch (if any and not first batch)
-                    if (batchNum > 1 && result.new_tags && result.new_tags > 0) {
-                        toaster.toast({
-                            title: 'New Games Tagged',
-                            body: `${result.new_tags} new game${result.new_tags > 1 ? 's' : ''} tagged!`,
-                            duration: 3000,
-                        });
-                    }
-                }
-                else {
-                    await logToBackend('error', `Batch ${batchNum} failed: ${result.error}`);
-                    totalErrors += batchAppids.length;
-                }
-            }
-            await logToBackend('info', `Step 3 complete: ${totalSynced}/${appids.length} synced, ${totalNewTags} new tags, ${totalErrors} errors`);
-            const syncMessage = `Sync complete! ${totalSynced}/${appids.length} games synced.` +
-                (totalNewTags > 0 ? ` ${totalNewTags} new tags.` : '') +
-                (totalErrors ? ` ${totalErrors} errors.` : '');
+            // Step 3: Sync all games at once - backend tracks progress
+            await logToBackend('info', 'Step 3: Syncing all games...');
+            const result = await call('sync_library_with_playtime', { game_data: gameData, achievement_data: achievementData, game_names: gameNames });
+            await logToBackend('info', `Step 3 complete: ${result.synced}/${appids.length} synced, ${result.new_tags || 0} new tags, ${result.errors || 0} errors`);
+            // Update UI to show new tags
+            await smartUpdateUI();
+            const syncMessage = `Sync complete! ${result.synced}/${appids.length} games synced.` +
+                (result.new_tags && result.new_tags > 0 ? ` ${result.new_tags} new tags.` : '') +
+                (result.errors ? ` ${result.errors} errors.` : '');
             showMessage(syncMessage);
-            // Show final toast notification
+            // Show final toast notification only at the end
             toaster.toast({
                 title: 'Game Progress Tracker',
                 body: syncMessage,
