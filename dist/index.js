@@ -904,12 +904,13 @@ const Settings = () => {
                     isExpanded && isBacklog && loadingBacklog && (SP_REACT.createElement("div", { style: styles$1.emptySection }, "Loading backlog games...")),
                     isExpanded && games.length > 0 && (SP_REACT.createElement(SP_REACT.Fragment, null, games.map((game) => (SP_REACT.createElement(DFL.PanelSectionRow, { key: game.appid },
                         SP_REACT.createElement(DFL.ButtonItem, { layout: "below", onClick: () => navigateToGame(game.appid) },
-                            SP_REACT.createElement("span", { style: {
-                                    ...styles$1.smallDot,
-                                    backgroundColor: TAG_COLORS[game.tag],
-                                } }),
-                            SP_REACT.createElement("div", { style: styles$1.gameName }, game.game_name),
-                            game.is_manual && (SP_REACT.createElement("span", { style: styles$1.manualBadge }, "manual")))))))),
+                            SP_REACT.createElement("div", { style: styles$1.gameItemContent },
+                                SP_REACT.createElement("span", { style: {
+                                        ...styles$1.smallDot,
+                                        backgroundColor: TAG_COLORS[game.tag],
+                                    } }),
+                                SP_REACT.createElement("div", { style: styles$1.gameName }, game.game_name),
+                                game.is_manual && (SP_REACT.createElement("span", { style: styles$1.manualBadge }, "manual"))))))))),
                     isExpanded && games.length === 0 && !loadingBacklog && (SP_REACT.createElement("div", { style: styles$1.emptySection }, "No games with this tag"))));
             })))),
         SP_REACT.createElement(DFL.PanelSection, null,
@@ -1030,8 +1031,9 @@ const styles$1 = {
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
-        display: 'inline-block',
-        maxWidth: '85%',
+        display: 'block',
+        flex: 1,
+        minWidth: 0,
     },
     manualBadge: {
         fontSize: '10px',
