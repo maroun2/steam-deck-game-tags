@@ -457,7 +457,7 @@ export const Settings: FC = () => {
                                   backgroundColor: TAG_COLORS[game.tag],
                                 }}
                               />
-                              <span style={styles.gameName}>{game.game_name}</span>
+                              <div style={styles.gameName}>{game.game_name}</div>
                               {game.is_manual && (
                                 <span style={styles.manualBadge}>manual</span>
                               )}

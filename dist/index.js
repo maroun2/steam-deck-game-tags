@@ -909,7 +909,7 @@ const Settings = () => {
                                         ...styles$1.smallDot,
                                         backgroundColor: TAG_COLORS[game.tag],
                                     } }),
-                                SP_REACT.createElement("span", { style: styles$1.gameName }, game.game_name),
+                                SP_REACT.createElement("div", { style: styles$1.gameName }, game.game_name),
                                 game.is_manual && (SP_REACT.createElement("span", { style: styles$1.manualBadge }, "manual"))))))))),
                     isExpanded && games.length === 0 && !loadingBacklog && (SP_REACT.createElement("div", { style: styles$1.emptySection }, "No games with this tag"))));
             })))),
