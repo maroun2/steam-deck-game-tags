@@ -610,11 +610,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   gameName: {
     fontSize: '13px',
-    flex: 1,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    minWidth: 0, // Allow flex item to shrink below content size
+    display: 'block',
+    flex: 1,
+    minWidth: 0,
   },
   manualBadge: {
     fontSize: '10px',
