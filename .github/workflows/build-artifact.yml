@@ -90,38 +90,23 @@ jobs:
           echo "$VERSION" > plugin-build/game-progress-tracker/VERSION
           echo "VERSION file created with: $VERSION"
 
-      - name: Create versioned plugin zip
+      - name: Verify directory contents
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          ZIP_NAME="game-progress-tracker-${VERSION}.zip"
-
-          cd plugin-build
-          zip -r "../$ZIP_NAME" game-progress-tracker
-          cd ..
-
-          echo "Created: $ZIP_NAME"
-          ls -lh "$ZIP_NAME"
-
-      - name: Verify zip contents
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          ZIP_NAME="game-progress-tracker-${VERSION}.zip"
-
-          echo "=== Plugin zip contents ==="
-          unzip -l "$ZIP_NAME" | head -30
+          echo "=== Plugin directory contents ==="
+          ls -lah plugin-build/game-progress-tracker/
           echo ""
           echo "=== Version in package.json ==="
-          unzip -p "$ZIP_NAME" game-progress-tracker/package.json | grep '"version"'
+          grep '"version"' plugin-build/game-progress-tracker/package.json
           echo ""
           echo "=== Version in plugin.json ==="
-          unzip -p "$ZIP_NAME" game-progress-tracker/plugin.json | grep '"version"'
+          grep '"version"' plugin-build/game-progress-tracker/plugin.json
           echo ""
           echo "=== VERSION file ==="
-          unzip -p "$ZIP_NAME" game-progress-tracker/VERSION
+          cat plugin-build/game-progress-tracker/VERSION
 
-      - name: Upload artifact
+      - name: Upload artifact (GitHub will zip it automatically)
         uses: actions/upload-artifact@v4
         with:
           name: game-progress-tracker-${{ steps.version.outputs.version }}
-          path: game-progress-tracker-${{ steps.version.outputs.version }}.zip
+          path: plugin-build/game-progress-tracker/
           retention-days: 90
