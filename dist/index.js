@@ -1014,6 +1014,7 @@ const styles$1 = {
         display: 'inline-block',
     },
     gameItemContent: {
+        width: '100%',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
