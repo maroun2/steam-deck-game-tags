@@ -449,7 +449,10 @@ export const Settings: FC = () => {
                           <ButtonItem
                             layout="below"
                             onClick={() => navigateToGame(game.appid)}
+                            /* FIX: Force the ButtonItem to be shrinkable so the ellipsis can trigger */
+                            style={{ width: '100%', minWidth: 0 }} 
                           >
+                            <div style={styles.gameItemContent}>
                               <span
                                 style={{
                                   ...styles.smallDot,
@@ -457,7 +460,10 @@ export const Settings: FC = () => {
                                 }}
                               />
                               <div style={styles.gameName}>{game.game_name}</div>
-                            
+                              {game.is_manual && (
+                                <span style={styles.manualBadge}>manual</span>
+                              )}
+                            </div>
                           </ButtonItem>
                         </PanelSectionRow>
                       ))}
