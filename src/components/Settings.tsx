@@ -450,8 +450,14 @@ export const Settings: FC = () => {
                             layout="below"
                             onClick={() => navigateToGame(game.appid)}
                           >
-                              {game.game_name}
-
+                              <span
+                                style={{
+                                  ...styles.smallDot,
+                                  backgroundColor: TAG_COLORS[game.tag],
+                                }}
+                              />
+                              <div style={styles.gameName}>{game.game_name}</div>
+                            
                           </ButtonItem>
                         </PanelSectionRow>
                       ))}
