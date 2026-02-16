@@ -623,15 +623,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   gameName: {
     fontSize: '13px',
-    color: '#ddd',
+    /* FIX: Use inherit so the color changes automatically when the button is selected */
+    color: 'inherit', 
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
-    display: 'inline-block', // Change from block to inline-block
+    display: 'inline-block',
     verticalAlign: 'middle',
-    /* We use a high percentage but leave room for the dot/badge.
-       Since the parent is width 100%, this forces truncation.
-    */
     maxWidth: 'calc(100% - 40px)', 
     flexShrink: 1,
   },
