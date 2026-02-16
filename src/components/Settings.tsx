@@ -450,17 +450,8 @@ export const Settings: FC = () => {
                             layout="below"
                             onClick={() => navigateToGame(game.appid)}
                           >
-                              <span
-                                style={{
-                                  ...styles.smallDot,
-                                  backgroundColor: TAG_COLORS[game.tag],
-                                }}
-                              />
-                              <div style={styles.gameName}>{game.game_name}</div>
-                              {game.is_manual && (
-                                <span style={styles.manualBadge}>manual</span>
-                              )}
-                            
+                              {game.game_name}
+
                           </ButtonItem>
                         </PanelSectionRow>
                       ))}
