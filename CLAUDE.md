@@ -102,3 +102,62 @@ For debugging the Steam Deck frontend using Chrome DevTools Protocol (CDP), see 
 - `call()` passes all parameters as a single dict to Python backend
 - Use `_extract_params()` helper in backend to unpack parameters
 - Non-Steam games have appids in shortcuts.vdf (binary format)
+
+## Project Structure
+
+### Key Files
+- **src/components/TagIcon.tsx** - Icon components for all tag types (mastered, completed, in_progress, backlog, dropped)
+- **src/components/Settings.tsx** - Main plugin UI with tag sections, sync controls, and about section
+- **src/index.tsx** - Plugin entry point with FaTrophy icon
+- **plugin.json** - Plugin metadata, requires `"flags": ["_root"]` for installation to work!
+- **main.py** - Python backend with database, HLTB integration, and tag logic
+
+### Icons
+- Plugin icon: `FaTrophy` from react-icons/fa
+- Mastered tag: `FaTrophy` from react-icons/fa (pink #f5576c)
+- Completed tag: Custom CheckCircleIcon (green #38ef7d)
+- In Progress tag: Custom ClockIcon (purple #764ba2)
+- Backlog tag: Custom EmptyCircleIcon (gray #888)
+- Dropped tag: Custom XCircleIcon (tan #c9a171)
+
+### Tag Priority System
+1. **Mastered** (highest) - 85%+ achievements
+2. **Completed** - Playtime ≥ HLTB main story time
+3. **Dropped** - Not played for 365+ days
+4. **In Progress** - Playtime ≥ 30 minutes
+5. **Backlog** (lowest) - No significant playtime
+
+### Dependencies
+- **react-icons** - For FaTrophy and other icons
+- **@decky/api** - Decky Loader API
+- **@decky/ui** - Decky UI components (ButtonItem, PanelSection, etc.)
+
+## Common Issues & Fixes
+
+### Plugin Won't Install
+- Check `plugin.json` has `"flags": ["_root"]` - REQUIRED for installation!
+- Version must match in package.json and plugin.json
+
+### GitHub Actions Build Uses Wrong Version
+- Check if tag is properly pushed: `git tag -l 1.3.0 --format='%(refname:short) -> %(objectname:short)'`
+- If tag points to wrong commit: `git tag -d 1.3.0 && git tag 1.3.0 && git push origin :refs/tags/1.3.0 && git push origin 1.3.0`
+
+### TypeScript Build Warnings
+- `HTMLCollection` iterator warnings in GameTagBadge.tsx - can be ignored
+- `Type 'null' cannot be used as index` in Settings.tsx - non-critical type warnings
+
+## Screenshots & Assets
+- Plugin screenshot: `/assets/plugin-screenshot.jpg`
+- Shows Settings UI with tag sections
+- Used as store banner in plugin.json
+
+## Recent Updates (v1.3.0)
+- Dropped tag system for abandoned games
+- Full gamepad navigation with D-pad support
+- Universal sync progress tracking
+- GitHub Actions automated builds
+- UI improvements with proper Decky components
+- Settings UI margins and scroll position fixes
+- About section with donation message
+- Plugin icon changed to FaTrophy
+- Mastered tag icon changed to FaTrophy
