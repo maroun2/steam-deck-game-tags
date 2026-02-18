@@ -147,7 +147,7 @@ const TagIcon = ({ type, size = 24, className }) => {
  * Shared functions for syncing game data using Steam's frontend API
  */
 // Debug logging helper
-const log$7 = (msg, data) => {
+const log$9 = (msg, data) => {
     const logMsg = `[GameProgressTracker][syncUtils] ${msg}`;
     if (data !== undefined) {
         console.log(logMsg, data);
@@ -162,40 +162,40 @@ const log$7 = (msg, data) => {
  * Uses window.appStore which has access to the full library
  */
 const getAllOwnedGameIds = async () => {
-    log$7('getAllOwnedGameIds: Discovering all owned games from Steam frontend...');
+    log$9('getAllOwnedGameIds: Discovering all owned games from Steam frontend...');
     const appStore = window.appStore;
     if (!appStore) {
-        log$7('appStore not available');
+        log$9('appStore not available');
         return [];
     }
     // Log available properties for debugging
     const appStoreKeys = Object.keys(appStore);
-    log$7('appStore keys:', appStoreKeys.join(', '));
+    log$9('appStore keys:', appStoreKeys.join(', '));
     // Also log prototype methods
     try {
         const protoKeys = Object.getOwnPropertyNames(Object.getPrototypeOf(appStore));
-        log$7('appStore prototype methods:', protoKeys.slice(0, 30).join(', '));
+        log$9('appStore prototype methods:', protoKeys.slice(0, 30).join(', '));
     }
     catch (e) {
-        log$7('Could not get appStore prototype');
+        log$9('Could not get appStore prototype');
     }
     // Try multiple known patterns for Steam's internal app storage
     // Pattern 1: m_mapApps (Map of all apps)
     if (appStore.m_mapApps instanceof Map) {
         const appids = Array.from(appStore.m_mapApps.keys()).map((id) => String(id));
-        log$7(`Found ${appids.length} games via m_mapApps Map`);
+        log$9(`Found ${appids.length} games via m_mapApps Map`);
         return appids.filter((id) => parseInt(id) > 0);
     }
     // Pattern 2: allApps property
     if (appStore.allApps) {
         if (appStore.allApps instanceof Map) {
             const appids = Array.from(appStore.allApps.keys()).map((id) => String(id));
-            log$7(`Found ${appids.length} games via allApps Map`);
+            log$9(`Found ${appids.length} games via allApps Map`);
             return appids.filter((id) => parseInt(id) > 0);
         }
         if (Array.isArray(appStore.allApps)) {
             const appids = appStore.allApps.map((app) => String(app.appid || app.app_id || app));
-            log$7(`Found ${appids.length} games via allApps Array`);
+            log$9(`Found ${appids.length} games via allApps Array`);
             return appids.filter((id) => parseInt(id) > 0);
         }
     }
@@ -203,11 +203,11 @@ const getAllOwnedGameIds = async () => {
     if (appStore.m_apps && typeof appStore.m_apps === 'object') {
         if (appStore.m_apps instanceof Map) {
             const appids = Array.from(appStore.m_apps.keys()).map((id) => String(id));
-            log$7(`Found ${appids.length} games via m_apps Map`);
+            log$9(`Found ${appids.length} games via m_apps Map`);
             return appids.filter((id) => parseInt(id) > 0);
         }
         const appids = Object.keys(appStore.m_apps);
-        log$7(`Found ${appids.length} games via m_apps Object`);
+        log$9(`Found ${appids.length} games via m_apps Object`);
         return appids.filter((id) => parseInt(id) > 0);
     }
     // Pattern 4: Try GetAllAppOverviews method (common Steam pattern)
@@ -216,12 +216,12 @@ const getAllOwnedGameIds = async () => {
             const overviews = appStore.GetAllAppOverviews();
             if (Array.isArray(overviews)) {
                 const appids = overviews.map((o) => String(o.appid || o.app_id || o.nAppID));
-                log$7(`Found ${appids.length} games via GetAllAppOverviews`);
+                log$9(`Found ${appids.length} games via GetAllAppOverviews`);
                 return appids.filter((id) => parseInt(id) > 0);
             }
         }
         catch (e) {
-            log$7('GetAllAppOverviews failed:', e);
+            log$9('GetAllAppOverviews failed:', e);
         }
     }
     // Pattern 5: Try iterating appStore.GetAppOverviewByAppID with known appids
@@ -230,18 +230,18 @@ const getAllOwnedGameIds = async () => {
     const collectionStore = window.collectionStore;
     if (collectionStore) {
         const collectionKeys = Object.keys(collectionStore);
-        log$7('collectionStore keys:', collectionKeys.join(', '));
+        log$9('collectionStore keys:', collectionKeys.join(', '));
         // Try GetUserOwnedApps method
         if (typeof collectionStore.GetUserOwnedApps === 'function') {
             try {
                 const apps = collectionStore.GetUserOwnedApps();
                 if (apps && apps.length > 0) {
-                    log$7(`Found ${apps.length} games via GetUserOwnedApps`);
+                    log$9(`Found ${apps.length} games via GetUserOwnedApps`);
                     return apps.map((id) => String(id)).filter((id) => parseInt(id) > 0);
                 }
             }
             catch (e) {
-                log$7('GetUserOwnedApps failed:', e);
+                log$9('GetUserOwnedApps failed:', e);
             }
         }
         // Try ownedAppsCollection
@@ -249,7 +249,7 @@ const getAllOwnedGameIds = async () => {
             const apps = Array.isArray(collectionStore.ownedAppsCollection)
                 ? collectionStore.ownedAppsCollection
                 : Array.from(collectionStore.ownedAppsCollection);
-            log$7(`Found ${apps.length} games via ownedAppsCollection`);
+            log$9(`Found ${apps.length} games via ownedAppsCollection`);
             return apps.map((id) => String(id)).filter((id) => parseInt(id) > 0);
         }
         // Try allGamesCollection
@@ -257,12 +257,12 @@ const getAllOwnedGameIds = async () => {
             const apps = Array.isArray(collectionStore.allGamesCollection)
                 ? collectionStore.allGamesCollection
                 : Array.from(collectionStore.allGamesCollection);
-            log$7(`Found ${apps.length} games via allGamesCollection`);
+            log$9(`Found ${apps.length} games via allGamesCollection`);
             return apps.map((id) => String(id)).filter((id) => parseInt(id) > 0);
         }
         // Try userCollections
         if (collectionStore.userCollections) {
-            log$7('userCollections keys:', Object.keys(collectionStore.userCollections).join(', '));
+            log$9('userCollections keys:', Object.keys(collectionStore.userCollections).join(', '));
         }
         // Try allAppsCollection
         if (collectionStore.allAppsCollection) {
@@ -271,38 +271,38 @@ const getAllOwnedGameIds = async () => {
                     ? collectionStore.allAppsCollection
                     : (collectionStore.allAppsCollection.apps || Array.from(collectionStore.allAppsCollection));
                 if (apps && apps.length > 0) {
-                    log$7(`Found ${apps.length} games via allAppsCollection`);
+                    log$9(`Found ${apps.length} games via allAppsCollection`);
                     return apps.map((id) => String(id.appid || id)).filter((id) => parseInt(id) > 0);
                 }
             }
             catch (e) {
-                log$7('allAppsCollection access failed:', e);
+                log$9('allAppsCollection access failed:', e);
             }
         }
     }
     // Pattern 7: Try SteamClient global
     const steamClient = window.SteamClient;
     if (steamClient) {
-        log$7('SteamClient available, checking for apps...');
+        log$9('SteamClient available, checking for apps...');
         if (steamClient.Apps) {
             const appsKeys = Object.keys(steamClient.Apps);
-            log$7('SteamClient.Apps keys:', appsKeys.slice(0, 20).join(', '));
+            log$9('SteamClient.Apps keys:', appsKeys.slice(0, 20).join(', '));
             if (typeof steamClient.Apps.GetAllApps === 'function') {
                 try {
                     const apps = await steamClient.Apps.GetAllApps();
                     if (apps && apps.length > 0) {
-                        log$7(`Found ${apps.length} games via SteamClient.Apps.GetAllApps`);
+                        log$9(`Found ${apps.length} games via SteamClient.Apps.GetAllApps`);
                         return apps.map((a) => String(a.appid || a)).filter((id) => parseInt(id) > 0);
                     }
                 }
                 catch (e) {
-                    log$7('SteamClient.Apps.GetAllApps failed:', e);
+                    log$9('SteamClient.Apps.GetAllApps failed:', e);
                 }
             }
         }
     }
-    log$7('Could not discover all owned games - no matching API pattern found');
-    log$7('Please check console output for available APIs and report to developer');
+    log$9('Could not discover all owned games - no matching API pattern found');
+    log$9('Please check console output for available APIs and report to developer');
     return [];
 };
 /**
@@ -310,23 +310,23 @@ const getAllOwnedGameIds = async () => {
  * Uses window.appAchievementProgressCache.m_achievementProgress.mapCache for full data
  */
 const getAchievementData = async (appids) => {
-    log$7(`getAchievementData called with ${appids.length} appids`);
+    log$9(`getAchievementData called with ${appids.length} appids`);
     const achievementMap = {};
     // NOTE: We do NOT set default 0/0 data - only return entries with actual data
     // Access Steam's global achievement progress cache
     const achievementCache = window.appAchievementProgressCache;
-    log$7(`appAchievementProgressCache available: ${!!achievementCache}`);
+    log$9(`appAchievementProgressCache available: ${!!achievementCache}`);
     if (!achievementCache) {
-        log$7('appAchievementProgressCache not available - cannot get achievements!');
+        log$9('appAchievementProgressCache not available - cannot get achievements!');
         return achievementMap;
     }
     // Access the mapCache which has the full achievement data
     const mapCache = achievementCache.m_achievementProgress?.mapCache;
     if (!mapCache) {
-        log$7('mapCache not available in achievementCache');
+        log$9('mapCache not available in achievementCache');
         return achievementMap;
     }
-    log$7(`mapCache available, size: ${mapCache.size}`);
+    log$9(`mapCache available, size: ${mapCache.size}`);
     let successCount = 0;
     const sampleLogs = [];
     for (const appid of appids) {
@@ -354,9 +354,9 @@ const getAchievementData = async (appids) => {
     }
     // Log results
     for (const logMsg of sampleLogs) {
-        log$7(`Achievement sample - ${logMsg}`);
+        log$9(`Achievement sample - ${logMsg}`);
     }
-    log$7(`getAchievementData: found ${successCount} entries with achievements`);
+    log$9(`getAchievementData: found ${successCount} entries with achievements`);
     return achievementMap;
 };
 /**
@@ -364,16 +364,16 @@ const getAchievementData = async (appids) => {
  * Uses window.appStore which is Steam's internal game data cache
  */
 const getPlaytimeData = async (appids) => {
-    log$7(`getPlaytimeData called with ${appids.length} appids`);
+    log$9(`getPlaytimeData called with ${appids.length} appids`);
     const gameDataMap = {};
     // Access Steam's global appStore
     const appStore = window.appStore;
-    log$7(`appStore available: ${!!appStore}`);
+    log$9(`appStore available: ${!!appStore}`);
     if (!appStore) {
-        log$7('appStore not available - cannot get playtime!');
+        log$9('appStore not available - cannot get playtime!');
         return gameDataMap;
     }
-    log$7(`GetAppOverviewByAppID exists: ${typeof appStore.GetAppOverviewByAppID}`);
+    log$9(`GetAppOverviewByAppID exists: ${typeof appStore.GetAppOverviewByAppID}`);
     let successCount = 0;
     let failCount = 0;
     let withPlaytime = 0;
@@ -409,9 +409,9 @@ const getPlaytimeData = async (appids) => {
     }
     // Log results
     for (const logMsg of sampleLogs) {
-        log$7(`Game data sample - ${logMsg}`);
+        log$9(`Game data sample - ${logMsg}`);
     }
-    log$7(`getPlaytimeData results: success=${successCount}, failed=${failCount}, withPlaytime=${withPlaytime}, withLastPlayed=${withLastPlayed}`);
+    log$9(`getPlaytimeData results: success=${successCount}, failed=${failCount}, withPlaytime=${withPlaytime}, withLastPlayed=${withLastPlayed}`);
     return gameDataMap;
 };
 /**
@@ -420,12 +420,12 @@ const getPlaytimeData = async (appids) => {
  * This works for ALL owned games, even uninstalled ones
  */
 const getGameNames = async (appids) => {
-    log$7(`getGameNames called with ${appids.length} appids`);
+    log$9(`getGameNames called with ${appids.length} appids`);
     const nameMap = {};
     // Access Steam's global appStore
     const appStore = window.appStore;
     if (!appStore) {
-        log$7('appStore not available - cannot get game names!');
+        log$9('appStore not available - cannot get game names!');
         return nameMap;
     }
     let successCount = 0;
@@ -452,9 +452,9 @@ const getGameNames = async (appids) => {
     }
     // Log results
     for (const logMsg of sampleLogs) {
-        log$7(`Game name sample - ${logMsg}`);
+        log$9(`Game name sample - ${logMsg}`);
     }
-    log$7(`getGameNames results: success=${successCount}, failed=${failCount}`);
+    log$9(`getGameNames results: success=${successCount}, failed=${failCount}`);
     return nameMap;
 };
 /**
@@ -466,21 +466,21 @@ const getGameNames = async (appids) => {
  * @returns Map of appid -> achievement data (only includes games with achievements)
  */
 const getAchievementDataWithFallback = async (appids) => {
-    log$7(`Getting achievements for ${appids.length} games (cache + API fallback)`);
+    log$9(`Getting achievements for ${appids.length} games (cache + API fallback)`);
     // Step 1: Try cache first (fast path)
     const cacheData = await getAchievementData(appids);
     const achievementMap = { ...cacheData };
     // Find appids not in cache
     const missingAppids = appids.filter(appid => !achievementMap[appid]);
     if (missingAppids.length === 0) {
-        log$7(`All ${appids.length} games found in cache`);
+        log$9(`All ${appids.length} games found in cache`);
         return achievementMap;
     }
-    log$7(`Cache: ${Object.keys(cacheData).length}/${appids.length}, fetching ${missingAppids.length} via API`);
+    log$9(`Cache: ${Object.keys(cacheData).length}/${appids.length}, fetching ${missingAppids.length} via API`);
     // Step 2: For missing appids, try API with 5s timeout
     const steamClient = window.SteamClient;
     if (!steamClient?.Apps?.GetMyAchievementsForApp) {
-        log$7(`API not available, returning cache data only`);
+        log$9(`API not available, returning cache data only`);
         return achievementMap;
     }
     let apiFetched = 0;
@@ -505,7 +505,7 @@ const getAchievementDataWithFallback = async (appids) => {
                         all_unlocked: total > 0 && unlocked === total
                     };
                     apiFetched++;
-                    log$7(`${appid}: ${unlocked}/${total} (${percentage.toFixed(1)}%)`);
+                    log$9(`${appid}: ${unlocked}/${total} (${percentage.toFixed(1)}%)`);
                 }
             }
         }
@@ -514,7 +514,7 @@ const getAchievementDataWithFallback = async (appids) => {
             // Continue to next appid
         }
     }
-    log$7(`API fetch complete: ${apiFetched} success, ${apiErrors} errors`);
+    log$9(`API fetch complete: ${apiFetched} success, ${apiErrors} errors`);
     return achievementMap;
 };
 /**
@@ -526,27 +526,27 @@ const getAchievementDataWithFallback = async (appids) => {
  * @returns Sync result from backend
  */
 const syncGames = async (appids) => {
-    log$7(`Syncing ${appids.length} games`);
+    log$9(`Syncing ${appids.length} games`);
     try {
         // Step 1: Get playtime and last played data
         const gameData = await getPlaytimeData(appids);
         const withPlaytime = Object.values(gameData).filter(v => v.playtime_minutes > 0).length;
         const withLastPlayed = Object.values(gameData).filter(v => v.rt_last_time_played !== null).length;
-        log$7(`Game data: ${withPlaytime}/${appids.length} with playtime, ${withLastPlayed}/${appids.length} with last played`);
+        log$9(`Game data: ${withPlaytime}/${appids.length} with playtime, ${withLastPlayed}/${appids.length} with last played`);
         // Step 2: Get achievement data (cache + API fallback)
         const achievementData = await getAchievementDataWithFallback(appids);
         const withAchievements = Object.keys(achievementData).length;
-        log$7(`Achievements: ${withAchievements}/${appids.length} games`);
+        log$9(`Achievements: ${withAchievements}/${appids.length} games`);
         // Step 3: Get game names
         const gameNames = await getGameNames(appids);
-        log$7(`Names: ${Object.keys(gameNames).length}/${appids.length} games`);
+        log$9(`Names: ${Object.keys(gameNames).length}/${appids.length} games`);
         // Step 4: Send to backend
         const result = await call('sync_library_with_playtime', { game_data: gameData, achievement_data: achievementData, game_names: gameNames });
-        log$7(`Sync complete: ${result.synced}/${result.total} games, ${result.errors || 0} errors`);
+        log$9(`Sync complete: ${result.synced}/${result.total} games, ${result.errors || 0} errors`);
         return result;
     }
     catch (e) {
-        log$7(`Sync failed: ${e?.message}`);
+        log$9(`Sync failed: ${e?.message}`);
         return { success: false, error: e?.message || 'Unknown error' };
     }
 };
@@ -556,39 +556,39 @@ const syncGames = async (appids) => {
  * Uses cache + API fallback for achievements
  */
 const syncSingleGameWithFrontendData = async (appid) => {
-    log$7(`Syncing single game: ${appid}`);
+    log$9(`Syncing single game: ${appid}`);
     const result = await syncGames([appid]);
     return { success: result.success, error: result.error };
 };
 const syncLibraryWithFrontendData = async () => {
-    log$7('Starting library sync');
+    log$9('Starting library sync');
     try {
         // Get settings
         const settingsResult = await call('get_settings');
         const useAllOwned = settingsResult?.settings?.source_all_owned ?? true;
-        log$7(`Source: ${useAllOwned ? 'all owned games' : 'installed only'}`);
+        log$9(`Source: ${useAllOwned ? 'all owned games' : 'installed only'}`);
         // Get game list
         let appids;
         if (useAllOwned) {
             // Try to discover games from frontend with retries if appStore isn't ready
             appids = await getAllOwnedGameIds();
-            log$7(`Discovered ${appids.length} owned games`);
+            log$9(`Discovered ${appids.length} owned games`);
             // Retry up to 3 times with 2 second delays if discovery fails (appStore not ready on initial load)
             let retries = 0;
             while (appids.length === 0 && retries < 3) {
                 retries++;
-                log$7(`Discovery failed (appStore may not be ready yet), retry ${retries}/3 in 2s...`);
+                log$9(`Discovery failed (appStore may not be ready yet), retry ${retries}/3 in 2s...`);
                 await new Promise(resolve => setTimeout(resolve, 2000));
                 appids = await getAllOwnedGameIds();
-                log$7(`Retry ${retries}: Discovered ${appids.length} owned games`);
+                log$9(`Retry ${retries}: Discovered ${appids.length} owned games`);
             }
             // Final fallback to backend if discovery still fails after retries
             if (appids.length === 0) {
-                log$7('Discovery failed after retries, using backend list');
+                log$9('Discovery failed after retries, using backend list');
                 const gamesResult = await call('get_all_games');
                 if (gamesResult.success && gamesResult.games) {
                     appids = gamesResult.games.map(g => g.appid);
-                    log$7(`Backend: ${appids.length} games`);
+                    log$9(`Backend: ${appids.length} games`);
                 }
             }
         }
@@ -598,17 +598,17 @@ const syncLibraryWithFrontendData = async () => {
                 return { success: false, error: gamesResult.error || 'Failed to get game list' };
             }
             appids = gamesResult.games.map(g => g.appid);
-            log$7(`Backend: ${appids.length} games`);
+            log$9(`Backend: ${appids.length} games`);
         }
         if (appids.length === 0) {
-            log$7('No games found');
+            log$9('No games found');
             return { success: true, total: 0, synced: 0, errors: 0 };
         }
         // Use syncGames helper (cache + API fallback)
         return await syncGames(appids);
     }
     catch (e) {
-        log$7(`Library sync failed: ${e?.message}`);
+        log$9(`Library sync failed: ${e?.message}`);
         return { success: false, error: e?.message || 'Unknown error' };
     }
 };
@@ -819,7 +819,7 @@ const styles$1 = {
  * Displays a colored badge with icon for game tags
  */
 // Debug logging helper
-const log$6 = (msg, data) => {
+const log$8 = (msg, data) => {
     const logMsg = `[GameProgressTracker][GameTag] ${msg}`;
     if (data !== undefined) {
         console.log(logMsg, data);
@@ -847,17 +847,17 @@ const TAG_STYLES = {
     }
 };
 const GameTag = ({ tag, onClick, compact = false }) => {
-    log$6(`GameTag render: tag=${tag?.tag || 'null'}, compact=${compact}, hasOnClick=${!!onClick}`);
+    log$8(`GameTag render: tag=${tag?.tag || 'null'}, compact=${compact}, hasOnClick=${!!onClick}`);
     if (!tag || !tag.tag) {
-        log$6('GameTag: no tag, returning null');
+        log$8('GameTag: no tag, returning null');
         return null;
     }
     const style = TAG_STYLES[tag.tag];
     if (!style) {
-        log$6(`GameTag: no style for tag=${tag.tag}, returning null`);
+        log$8(`GameTag: no style for tag=${tag.tag}, returning null`);
         return null;
     }
-    log$6(`GameTag: rendering badge for tag=${tag.tag}`);
+    log$8(`GameTag: rendering badge for tag=${tag.tag}`);
     // Compact mode: just the icon with background circle
     if (compact) {
         const compactStyle = {
@@ -907,7 +907,7 @@ const GameTag = ({ tag, onClick, compact = false }) => {
  * Modal for managing game tags manually
  */
 // Debug logging helper
-const log$5 = (msg, data) => {
+const log$7 = (msg, data) => {
     const logMsg = `[GameProgressTracker][TagManager] ${msg}`;
     if (data !== undefined) {
         console.log(logMsg, data);
@@ -920,24 +920,24 @@ const TagManager = ({ appid, onClose }) => {
     const [details, setDetails] = SP_REACT.useState(null);
     const [loading, setLoading] = SP_REACT.useState(true);
     const [error, setError] = SP_REACT.useState(null);
-    log$5(`TagManager mounted for appid=${appid}`);
+    log$7(`TagManager mounted for appid=${appid}`);
     SP_REACT.useEffect(() => {
-        log$5(`TagManager useEffect: fetching details for appid=${appid}`);
+        log$7(`TagManager useEffect: fetching details for appid=${appid}`);
         fetchDetails();
     }, [appid]);
     const fetchDetails = async () => {
         try {
-            log$5(`fetchDetails: calling get_game_details for appid=${appid}`);
+            log$7(`fetchDetails: calling get_game_details for appid=${appid}`);
             setLoading(true);
             setError(null);
             const result = await call('get_game_details', { appid });
-            log$5(`fetchDetails: result for appid=${appid}:`, result);
+            log$7(`fetchDetails: result for appid=${appid}:`, result);
             setDetails(result);
         }
         catch (err) {
             const errorMsg = err?.message || 'Failed to load game details';
             setError(errorMsg);
-            log$5(`fetchDetails: error for appid=${appid}: ${errorMsg}`, err);
+            log$7(`fetchDetails: error for appid=${appid}: ${errorMsg}`, err);
         }
         finally {
             setLoading(false);
@@ -945,41 +945,41 @@ const TagManager = ({ appid, onClose }) => {
     };
     const setTag = async (tag) => {
         try {
-            log$5(`setTag: calling set_manual_tag for appid=${appid}, tag=${tag}`);
+            log$7(`setTag: calling set_manual_tag for appid=${appid}, tag=${tag}`);
             const result = await call('set_manual_tag', { appid, tag });
-            log$5(`setTag: result for appid=${appid}:`, result);
+            log$7(`setTag: result for appid=${appid}:`, result);
             await fetchDetails();
         }
         catch (err) {
             const errorMsg = err?.message || 'Failed to set tag';
             setError(errorMsg);
-            log$5(`setTag: error for appid=${appid}: ${errorMsg}`, err);
+            log$7(`setTag: error for appid=${appid}: ${errorMsg}`, err);
         }
     };
     const resetToAuto = async () => {
         try {
-            log$5(`resetToAuto: calling reset_to_auto_tag for appid=${appid}`);
+            log$7(`resetToAuto: calling reset_to_auto_tag for appid=${appid}`);
             const result = await call('reset_to_auto_tag', { appid });
-            log$5(`resetToAuto: result for appid=${appid}:`, result);
+            log$7(`resetToAuto: result for appid=${appid}:`, result);
             await fetchDetails();
         }
         catch (err) {
             const errorMsg = err?.message || 'Failed to reset tag';
             setError(errorMsg);
-            log$5(`resetToAuto: error for appid=${appid}: ${errorMsg}`, err);
+            log$7(`resetToAuto: error for appid=${appid}: ${errorMsg}`, err);
         }
     };
     const removeTag = async () => {
         try {
-            log$5(`removeTag: calling remove_tag for appid=${appid}`);
+            log$7(`removeTag: calling remove_tag for appid=${appid}`);
             const result = await call('remove_tag', { appid });
-            log$5(`removeTag: result for appid=${appid}:`, result);
+            log$7(`removeTag: result for appid=${appid}:`, result);
             await fetchDetails();
         }
         catch (err) {
             const errorMsg = err?.message || 'Failed to remove tag';
             setError(errorMsg);
-            log$5(`removeTag: error for appid=${appid}: ${errorMsg}`, err);
+            log$7(`removeTag: error for appid=${appid}: ${errorMsg}`, err);
         }
     };
     if (loading) {
@@ -1223,7 +1223,7 @@ const styles = {
  * React hook for managing game tags
  */
 // Debug logging helper
-const log$4 = (msg, data) => {
+const log$6 = (msg, data) => {
     const logMsg = `[GameProgressTracker][useGameTag] ${msg}`;
     if (data !== undefined) {
         console.log(logMsg, data);
@@ -1237,22 +1237,22 @@ function useGameTag(appid) {
     const [loading, setLoading] = SP_REACT.useState(true);
     const [error, setError] = SP_REACT.useState(null);
     SP_REACT.useEffect(() => {
-        log$4(`useEffect triggered for appid=${appid}`);
+        log$6(`useEffect triggered for appid=${appid}`);
         fetchTag();
     }, [appid]);
     const fetchTag = async () => {
         try {
-            log$4(`fetchTag: calling get_game_tag for appid=${appid}`);
+            log$6(`fetchTag: calling get_game_tag for appid=${appid}`);
             setLoading(true);
             setError(null);
             const result = await call('get_game_tag', { appid });
-            log$4(`fetchTag: result for appid=${appid}:`, result);
+            log$6(`fetchTag: result for appid=${appid}:`, result);
             setTag(result.tag);
         }
         catch (err) {
             const errorMsg = err?.message || 'Failed to fetch tag';
             setError(errorMsg);
-            log$4(`fetchTag: error for appid=${appid}: ${errorMsg}`, err);
+            log$6(`fetchTag: error for appid=${appid}: ${errorMsg}`, err);
         }
         finally {
             setLoading(false);
@@ -1324,7 +1324,7 @@ function useGameTag(appid) {
  * Uses same positioning pattern as ProtonDB Badges
  */
 // Debug logging helper
-const log$3 = (msg, data) => {
+const log$5 = (msg, data) => {
     const logMsg = `[GameProgressTracker][GameTagBadge] ${msg}`;
     if (data !== undefined) {
         console.log(logMsg, data);
@@ -1344,7 +1344,8 @@ function findTopCapsuleParent(ref) {
     }
     // Find the Header container
     let headerContainer;
-    for (const child of children) {
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
         if (child.className.includes(DFL.appDetailsClasses.Header)) {
             headerContainer = child;
             break;
@@ -1355,7 +1356,8 @@ function findTopCapsuleParent(ref) {
     }
     // Find TopCapsule within the header
     let topCapsule = null;
-    for (const child of headerContainer.children) {
+    for (let i = 0; i < headerContainer.children.length; i++) {
+        const child = headerContainer.children[i];
         if (child.className.includes(DFL.appDetailsHeaderClasses.TopCapsule)) {
             topCapsule = child;
             break;
@@ -1397,37 +1399,37 @@ const GameTagBadge = ({ appid }) => {
     const [show, setShow] = SP_REACT.useState(true);
     const ref = SP_REACT.useRef(null);
     SP_REACT.useEffect(() => {
-        log$3(`Mounted: appid=${appid}`);
+        log$5(`Mounted: appid=${appid}`);
         // Sync this game's data when detail page is viewed
         // This ensures we have the latest playtime and achievement data
         (async () => {
             try {
-                log$3(`Syncing game data for appid=${appid}...`);
+                log$5(`Syncing game data for appid=${appid}...`);
                 const result = await syncSingleGameWithFrontendData(appid);
                 if (result.success) {
-                    log$3(`Game ${appid} synced successfully, refreshing tag...`);
+                    log$5(`Game ${appid} synced successfully, refreshing tag...`);
                     refetch();
                 }
                 else {
-                    log$3(`Game ${appid} sync failed: ${result.error}`);
+                    log$5(`Game ${appid} sync failed: ${result.error}`);
                 }
             }
             catch (e) {
-                log$3(`Error syncing game ${appid}:`, e);
+                log$5(`Error syncing game ${appid}:`, e);
             }
         })();
         return () => {
-            log$3(`Unmounted: appid=${appid}`);
+            log$5(`Unmounted: appid=${appid}`);
         };
     }, [appid]);
     // Watch for fullscreen mode changes (same pattern as ProtonDB)
     SP_REACT.useEffect(() => {
         const topCapsule = findTopCapsuleParent(ref?.current);
         if (!topCapsule) {
-            log$3('TopCapsule container not found');
+            log$5('TopCapsule container not found');
             return;
         }
-        log$3('TopCapsule found, setting up mutation observer');
+        log$5('TopCapsule found, setting up mutation observer');
         const mutationObserver = new MutationObserver((entries) => {
             for (const entry of entries) {
                 if (entry.type !== 'attributes' || entry.attributeName !== 'class') {
@@ -1449,22 +1451,22 @@ const GameTagBadge = ({ appid }) => {
         };
     }, []);
     SP_REACT.useEffect(() => {
-        log$3(`State update: appid=${appid}, loading=${loading}, tag=`, tag);
+        log$5(`State update: appid=${appid}, loading=${loading}, tag=`, tag);
         if (error) {
-            log$3(`Error: ${error}`);
+            log$5(`Error: ${error}`);
         }
     }, [appid, tag, loading, error]);
     if (loading) {
-        log$3(`Still loading for appid=${appid}`);
+        log$5(`Still loading for appid=${appid}`);
         return SP_REACT.createElement("div", { ref: ref, style: { display: 'none' } });
     }
-    log$3(`Rendering: appid=${appid}, hasTag=${!!tag}, tagValue=${tag?.tag || 'none'}, show=${show}`);
+    log$5(`Rendering: appid=${appid}, hasTag=${!!tag}, tagValue=${tag?.tag || 'none'}, show=${show}`);
     const handleClick = () => {
-        log$3(`Tag button clicked for appid=${appid}`);
+        log$5(`Tag button clicked for appid=${appid}`);
         setShowManager(true);
     };
     const handleClose = () => {
-        log$3(`TagManager closed for appid=${appid}`);
+        log$5(`TagManager closed for appid=${appid}`);
         setShowManager(false);
         refetch();
     };
@@ -1486,7 +1488,7 @@ const GameTagBadge = ({ appid }) => {
  * Uses proper Decky UI patching utilities for safety
  */
 // Debug logging helper
-const log$2 = (msg, data) => {
+const log$4 = (msg, data) => {
     const logMsg = `[GameProgressTracker][patchLibraryApp] ${msg}`;
     if (data !== undefined) {
         console.log(logMsg, data);
@@ -1513,7 +1515,7 @@ function getAppIdFromUrl() {
         return null;
     }
     catch (e) {
-        log$2('Error getting appid from URL:', e);
+        log$4('Error getting appid from URL:', e);
         return null;
     }
 }
@@ -1522,14 +1524,14 @@ function getAppIdFromUrl() {
  * Following the ProtonDB Badges pattern for safety
  */
 function patchLibraryApp() {
-    log$2('Setting up library app patch');
+    log$4('Setting up library app patch');
     return routerHook.addPatch('/library/app/:appid', (tree) => {
-        log$2('Route patch callback triggered');
+        log$4('Route patch callback triggered');
         try {
             // Find the route props with renderFunc (same pattern as ProtonDB)
             const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
             if (routeProps) {
-                log$2('Found routeProps with renderFunc');
+                log$4('Found routeProps with renderFunc');
                 const patchHandler = DFL.createReactTreePatcher([
                     (tree) => DFL.findInReactTree(tree, (x) => x?.props?.children?.props?.overview)?.props?.children
                 ], (_, ret) => {
@@ -1537,33 +1539,320 @@ function patchLibraryApp() {
                     const container = DFL.findInReactTree(ret, (x) => Array.isArray(x?.props?.children) &&
                         x?.props?.className?.includes(DFL.appDetailsClasses.InnerContainer));
                     if (typeof container !== 'object') {
-                        log$2('Container not found, returning original');
+                        log$4('Container not found, returning original');
                         return ret;
                     }
                     // Get appid from URL since we're inside the render
                     const appid = getAppIdFromUrl();
                     if (appid) {
-                        log$2(`Injecting GameTagBadge for appid=${appid}`);
+                        log$4(`Injecting GameTagBadge for appid=${appid}`);
                         // Inject our badge component at position 0 (first child, will use absolute positioning)
                         container.props.children.splice(0, 0, SP_REACT.createElement(GameTagBadge, { key: "game-progress-tag", appid: appid }));
                     }
                     else {
-                        log$2('Could not determine appid');
+                        log$4('Could not determine appid');
                     }
                     return ret;
                 });
                 DFL.afterPatch(routeProps, "renderFunc", patchHandler);
-                log$2('Patch handler attached to renderFunc');
+                log$4('Patch handler attached to renderFunc');
             }
             else {
-                log$2('routeProps with renderFunc not found');
+                log$4('routeProps with renderFunc not found');
             }
         }
         catch (error) {
-            log$2('Error in route patch:', error);
+            log$4('Error in route patch:', error);
         }
         return tree;
     });
+}
+
+/**
+ * LibraryTagIcon Component
+ * Small overlay icon for library grid view
+ * Shows simplified tag indicator on game covers
+ */
+// Debug logging helper
+const log$3 = (msg, data) => {
+    const logMsg = `[GameProgressTracker][LibraryTagIcon] ${msg}`;
+    if (data !== undefined) {
+        console.log(logMsg, data);
+    }
+    else {
+        console.log(logMsg);
+    }
+};
+/**
+ * Preload all tags for better performance
+ * Call this once when the library loads
+ */
+async function preloadAllTags() {
+    try {
+        log$3('Preloading all tags for library...');
+        const result = await call('get_all_tags_with_names');
+        if (result.success && result.games) {
+            // Initialize cache
+            if (!window.__gameProgressTrackerCache) {
+                window.__gameProgressTrackerCache = { tags: {} };
+            }
+            // Store all tags
+            const cache = window.__gameProgressTrackerCache.tags;
+            result.games.forEach(game => {
+                cache[game.appid] = { tag: game.tag, is_manual: game.is_manual };
+            });
+            log$3(`Preloaded ${result.games.length} tags`);
+        }
+    }
+    catch (err) {
+        log$3('Error preloading tags:', err);
+    }
+}
+
+/**
+ * Library Grid Patching
+ * Adds tag icons to game covers in the library grid view
+ */
+// Debug logging helper
+const log$2 = (msg, data) => {
+    const logMsg = `[GameProgressTracker][patchLibraryGrid] ${msg}`;
+    if (data !== undefined) {
+        console.log(logMsg, data);
+    }
+    else {
+        console.log(logMsg);
+    }
+};
+/**
+ * Extract app ID from Steam image URL
+ * URLs are in format: /assets/{APP_ID}/library_600x900.jpg
+ */
+function extractAppIdFromImageUrl(url) {
+    const match = url.match(/\/assets\/(\d+)\//);
+    return match ? match[1] : null;
+}
+/**
+ * Create an icon element for a game
+ */
+function createIconElement(appId) {
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'game-progress-tracker-icon';
+    iconContainer.dataset.appid = appId;
+    // Get cached tag if available
+    const cachedTag = window.__gameProgressTrackerCache?.tags?.[appId];
+    if (cachedTag?.tag) {
+        // Create a simple DOM element for the icon (non-React approach for now)
+        const iconStyle = `
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 28px;
+      height: 28px;
+      background-color: rgba(0, 0, 0, 0.8);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      pointer-events: none;
+    `;
+        iconContainer.style.cssText = iconStyle;
+        // Add a simple text indicator for now
+        const tagColors = {
+            mastered: '#f5576c',
+            completed: '#38ef7d',
+            in_progress: '#764ba2',
+            backlog: '#888',
+            dropped: '#c9a171',
+        };
+        iconContainer.style.border = `2px solid ${tagColors[cachedTag.tag] || '#666'}`;
+        // Add a simple emoji or letter based on tag type
+        const tagSymbols = {
+            mastered: '★',
+            completed: '✓',
+            in_progress: '▶',
+            backlog: '○',
+            dropped: '✗',
+        };
+        iconContainer.innerHTML = `<span style="color: ${tagColors[cachedTag.tag] || '#fff'}; font-size: 14px; font-weight: bold;">${tagSymbols[cachedTag.tag] || '?'}</span>`;
+        iconContainer.title = cachedTag.tag.replace('_', ' ').toUpperCase();
+    }
+    return iconContainer;
+}
+/**
+ * Process a game cover image and add tag icon
+ */
+function processGameImage(img) {
+    // Skip if already processed
+    if (img.dataset.tagProcessed === 'true') {
+        return;
+    }
+    // Extract app ID from image URL
+    const appId = extractAppIdFromImageUrl(img.src);
+    if (!appId) {
+        return;
+    }
+    // Mark as processed
+    img.dataset.tagProcessed = 'true';
+    img.dataset.appid = appId;
+    // Find or create wrapper container
+    let wrapper = img.parentElement;
+    // Make sure the wrapper has relative positioning for our absolute icon
+    if (wrapper) {
+        const currentPosition = window.getComputedStyle(wrapper).position;
+        if (currentPosition === 'static' || currentPosition === '') {
+            wrapper.style.position = 'relative';
+        }
+        // Create and add the icon element
+        try {
+            const iconElement = createIconElement(appId);
+            wrapper.appendChild(iconElement);
+            log$2(`Added tag icon for app ${appId}`);
+        }
+        catch (err) {
+            log$2(`Error adding tag icon for ${appId}:`, err);
+        }
+    }
+}
+/**
+ * Process all game images currently in the DOM
+ */
+function processAllGameImages() {
+    // Find all library game cover images
+    const images = document.querySelectorAll('img[src*="/assets/"][src*="/library_600x900.jpg"]');
+    log$2(`Found ${images.length} game cover images`);
+    images.forEach(img => {
+        processGameImage(img);
+    });
+}
+/**
+ * Clean up icons (remove from DOM)
+ */
+function cleanupIcons() {
+    const icons = document.querySelectorAll('.game-progress-tracker-icon');
+    icons.forEach(icon => {
+        icon.remove();
+    });
+    // Reset processed flags
+    const images = document.querySelectorAll('img[data-tag-processed]');
+    images.forEach(img => {
+        delete img.dataset.tagProcessed;
+    });
+}
+/**
+ * Set up mutation observer to handle dynamically loaded games
+ */
+function setupMutationObserver() {
+    const observer = new MutationObserver((mutations) => {
+        let hasNewImages = false;
+        for (const mutation of mutations) {
+            // Check added nodes for images
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    const element = node;
+                    // Check if it's an image or contains images
+                    if (element.tagName === 'IMG') {
+                        const img = element;
+                        if (img.src.includes('/assets/') && img.src.includes('/library_600x900.jpg')) {
+                            hasNewImages = true;
+                            processGameImage(img);
+                        }
+                    }
+                    else {
+                        // Check for images within the added element
+                        const images = element.querySelectorAll('img[src*="/assets/"][src*="/library_600x900.jpg"]');
+                        if (images.length > 0) {
+                            hasNewImages = true;
+                            images.forEach(processGameImage);
+                        }
+                    }
+                }
+            });
+        }
+        if (hasNewImages) {
+            log$2('New game images detected and processed');
+        }
+    });
+    // Start observing the body for changes
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+    return observer;
+}
+let currentObserver = null;
+/**
+ * Initialize library grid patching for a specific route
+ */
+function initializeLibraryPatching() {
+    log$2('Initializing library grid patching');
+    // Preload all tags for better performance
+    preloadAllTags().then(() => {
+        log$2('Tags preloaded');
+        // Process existing images
+        processAllGameImages();
+        // Set up observer for new images
+        if (currentObserver) {
+            currentObserver.disconnect();
+        }
+        currentObserver = setupMutationObserver();
+    });
+}
+/**
+ * Clean up when leaving library routes
+ */
+function cleanupLibraryPatching() {
+    log$2('Cleaning up library grid patching');
+    if (currentObserver) {
+        currentObserver.disconnect();
+        currentObserver = null;
+    }
+    cleanupIcons();
+}
+/**
+ * Patch library routes to add tag icons
+ */
+function patchLibraryGrid() {
+    log$2('Setting up library grid patch');
+    // Patch multiple library routes
+    const libraryRoutes = [
+        '/library/home',
+        '/library/collection/:collection',
+        '/library',
+    ];
+    const patches = [];
+    libraryRoutes.forEach(route => {
+        const unpatch = routerHook.addPatch(route, (routeProps) => {
+            log$2(`Route patch triggered for ${route}`);
+            // Wait a bit for the library to render
+            setTimeout(() => {
+                initializeLibraryPatching();
+            }, 500);
+            // Clean up when navigating away
+            const originalComponentWillUnmount = routeProps.componentWillUnmount;
+            routeProps.componentWillUnmount = function () {
+                cleanupLibraryPatching();
+                if (originalComponentWillUnmount) {
+                    originalComponentWillUnmount.call(this);
+                }
+            };
+            return routeProps;
+        });
+        patches.push(unpatch);
+    });
+    // Also try to initialize immediately if we're already on a library page
+    if (window.location.href.includes('/library')) {
+        setTimeout(() => {
+            initializeLibraryPatching();
+        }, 1000);
+    }
+    // Return cleanup function
+    return () => {
+        log$2('Removing library grid patches');
+        cleanupLibraryPatching();
+        patches.forEach(unpatch => unpatch());
+    };
 }
 
 /**
@@ -1673,12 +1962,22 @@ var index = definePlugin(() => {
     // Patch the game library page using the safe ProtonDB-style approach
     log('Setting up library app patch');
     let libraryPatch = null;
+    let libraryGridPatch = null;
     try {
         libraryPatch = patchLibraryApp();
         log('Library app patch registered successfully');
     }
     catch (error) {
         log('Failed to register library app patch:', error);
+    }
+    // Patch the library grid view to add tag icons
+    log('Setting up library grid patch');
+    try {
+        libraryGridPatch = patchLibraryGrid();
+        log('Library grid patch registered successfully');
+    }
+    catch (error) {
+        log('Failed to register library grid patch:', error);
     }
     // Start achievement cache watcher (monitors when user views "Your Stuff" tab)
     log('Starting achievement cache watcher');
@@ -1725,6 +2024,16 @@ var index = definePlugin(() => {
                 }
                 catch (error) {
                     log('Error removing library app patch:', error);
+                }
+            }
+            // Clean up library grid patch
+            if (libraryGridPatch) {
+                try {
+                    libraryGridPatch(); // This calls the cleanup function
+                    log('Library grid patch removed successfully');
+                }
+                catch (error) {
+                    log('Error removing library grid patch:', error);
                 }
             }
         }

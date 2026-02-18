@@ -11,6 +11,7 @@ import React from 'react';
 import { FaTrophy } from 'react-icons/fa';
 import { Settings } from './components/Settings';
 import patchLibraryApp from './lib/patchLibraryApp';
+import patchLibraryGrid from './lib/patchLibraryGrid';
 import { syncLibraryWithFrontendData } from './lib/syncUtils';
 import { startAchievementCacheWatcher, stopAchievementCacheWatcher } from './lib/achievementCacheWatcher';
 
@@ -33,12 +34,22 @@ export default definePlugin(() => {
   // Patch the game library page using the safe ProtonDB-style approach
   log('Setting up library app patch');
   let libraryPatch: ReturnType<typeof patchLibraryApp> | null = null;
+  let libraryGridPatch: ReturnType<typeof patchLibraryGrid> | null = null;
 
   try {
     libraryPatch = patchLibraryApp();
     log('Library app patch registered successfully');
   } catch (error) {
     log('Failed to register library app patch:', error);
+  }
+
+  // Patch the library grid view to add tag icons
+  log('Setting up library grid patch');
+  try {
+    libraryGridPatch = patchLibraryGrid();
+    log('Library grid patch registered successfully');
+  } catch (error) {
+    log('Failed to register library grid patch:', error);
   }
 
   // Start achievement cache watcher (monitors when user views "Your Stuff" tab)
@@ -90,6 +101,16 @@ export default definePlugin(() => {
           log('Library app patch removed successfully');
         } catch (error) {
           log('Error removing library app patch:', error);
+        }
+      }
+
+      // Clean up library grid patch
+      if (libraryGridPatch) {
+        try {
+          libraryGridPatch(); // This calls the cleanup function
+          log('Library grid patch removed successfully');
+        } catch (error) {
+          log('Error removing library grid patch:', error);
         }
       }
     }

@@ -34,7 +34,8 @@ function findTopCapsuleParent(ref: HTMLDivElement | null): Element | null {
 
   // Find the Header container
   let headerContainer: Element | undefined;
-  for (const child of children) {
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i];
     if (child.className.includes(appDetailsClasses.Header)) {
       headerContainer = child;
       break;
@@ -47,7 +48,8 @@ function findTopCapsuleParent(ref: HTMLDivElement | null): Element | null {
 
   // Find TopCapsule within the header
   let topCapsule: Element | null = null;
-  for (const child of headerContainer.children) {
+  for (let i = 0; i < headerContainer.children.length; i++) {
+    const child = headerContainer.children[i];
     if (child.className.includes(appDetailsHeaderClasses.TopCapsule)) {
       topCapsule = child;
       break;
