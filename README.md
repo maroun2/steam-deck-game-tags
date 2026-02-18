@@ -247,7 +247,7 @@ MIT License - see [LICENSE](LICENSE) file
 
 ## Changelog
 
-### v1.3.0 (2026-02-17)
+### 1.3.0 (2026-02-17)
 - **New:** Dropped tag system - automatic detection of games not played for 365+ days
 - **New:** Full gamepad navigation with D-pad support for all UI elements
 - **New:** Universal sync progress tracking with real-time updates ("Syncing: X/Y games")
@@ -264,17 +264,17 @@ MIT License - see [LICENSE](LICENSE) file
 - **Technical:** Removed custom focus styling to use Steam's native focus system
 - **Technical:** Better separation of concerns and reduced code duplication
 
-### v1.2.0
+### 1.2.0
 - Enhanced UI with proper Decky components
 - Improved state management
 - Bug fixes and performance improvements
 
-### v1.1.0
+### 1.1.0
 - Added manual tag override system
 - Improved HLTB integration
 - UI refinements
 
-### v1.0.0
+### 1.0.0
 - Initial release
 - Automatic tagging system (Completed, In Progress, Mastered)
 - HLTB integration

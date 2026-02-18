@@ -10,7 +10,7 @@ Single command to build, commit, tag, and create GitHub release:
 ./release.sh 1.1.XX "Description of changes"
 ```
 
-**IMPORTANT:** Version must be numbers and dots only (e.g., `1.1.14`), NOT with `v` prefix.
+**IMPORTANT:** Version must be numbers and dots only (e.g., `1.1.14` or `1.3.0`), NEVER with `v` prefix (NOT `v1.3.0`).
 
 ### Granular Control
 
@@ -151,7 +151,7 @@ For debugging the Steam Deck frontend using Chrome DevTools Protocol (CDP), see 
 - Shows Settings UI with tag sections
 - Used as store banner in plugin.json
 
-## Recent Updates (v1.3.0)
+## Recent Updates (1.3.0)
 - Dropped tag system for abandoned games
 - Full gamepad navigation with D-pad support
 - Universal sync progress tracking
