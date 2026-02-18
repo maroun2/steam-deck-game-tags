@@ -1,10 +1,16 @@
 /**
  * Library Grid Patching
  * Adds tag icons to game covers in the library grid view
+ * Uses React tree patching approach (like detail pages) instead of DOM manipulation
  */
 
+import {
+  afterPatch,
+  findInReactTree,
+  createReactTreePatcher
+} from '@decky/ui';
 import { routerHook } from '@decky/api';
-import React from 'react';
+import React, { ReactElement } from 'react';
 import { LibraryTagIcon, preloadAllTags } from '../components/LibraryTagIcon';
 
 // Debug logging helper
@@ -17,244 +23,144 @@ const log = (msg: string, data?: any) => {
   }
 };
 
-/**
- * Extract app ID from Steam image URL
- * URLs are in format: /assets/{APP_ID}/library_600x900.jpg
- */
-function extractAppIdFromImageUrl(url: string): string | null {
-  const match = url.match(/\/assets\/(\d+)\//);
-  return match ? match[1] : null;
-}
+// Cache to track which components we've already patched
+const patchedComponents = new WeakSet();
 
 /**
- * Create an icon element for a game
+ * Extract app ID from various possible props locations
  */
-function createIconElement(appId: string): HTMLDivElement {
-  const iconContainer = document.createElement('div');
-  iconContainer.className = 'game-progress-tracker-icon';
-  iconContainer.dataset.appid = appId;
+function getAppIdFromProps(props: any): string | null {
+  if (!props) return null;
 
-  // Get cached tag if available
-  const cachedTag = (window as any).__gameProgressTrackerCache?.tags?.[appId];
-
-  if (cachedTag?.tag) {
-    // Create a simple DOM element for the icon (non-React approach for now)
-    const iconStyle = `
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 28px;
-      height: 28px;
-      background-color: rgba(0, 0, 0, 0.8);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-      z-index: 10;
-      pointer-events: none;
-    `;
-
-    iconContainer.style.cssText = iconStyle;
-
-    // Add a simple text indicator for now
-    const tagColors: Record<string, string> = {
-      mastered: '#f5576c',
-      completed: '#38ef7d',
-      in_progress: '#764ba2',
-      backlog: '#888',
-      dropped: '#c9a171',
-    };
-
-    iconContainer.style.border = `2px solid ${tagColors[cachedTag.tag] || '#666'}`;
-
-    // Add a simple emoji or letter based on tag type
-    const tagSymbols: Record<string, string> = {
-      mastered: '★',
-      completed: '✓',
-      in_progress: '▶',
-      backlog: '○',
-      dropped: '✗',
-    };
-
-    iconContainer.innerHTML = `<span style="color: ${tagColors[cachedTag.tag] || '#fff'}; font-size: 14px; font-weight: bold;">${tagSymbols[cachedTag.tag] || '?'}</span>`;
-    iconContainer.title = cachedTag.tag.replace('_', ' ').toUpperCase();
+  // Try direct appid prop
+  if (props.appid) {
+    return String(props.appid);
   }
 
-  return iconContainer;
-}
-
-/**
- * Process a game cover image and add tag icon
- */
-function processGameImage(img: HTMLImageElement): void {
-  // Skip if already processed
-  if (img.dataset.tagProcessed === 'true') {
-    return;
+  // Try data.appid (common pattern)
+  if (props.data?.appid) {
+    return String(props.data.appid);
   }
 
-  // Extract app ID from image URL
-  const appId = extractAppIdFromImageUrl(img.src);
-  if (!appId) {
-    return;
+  // Try overview.appid
+  if (props.overview?.appid) {
+    return String(props.overview.appid);
   }
 
-  // Mark as processed
-  img.dataset.tagProcessed = 'true';
-  img.dataset.appid = appId;
-
-  // Find or create wrapper container
-  let wrapper = img.parentElement;
-
-  // Make sure the wrapper has relative positioning for our absolute icon
-  if (wrapper) {
-    const currentPosition = window.getComputedStyle(wrapper).position;
-    if (currentPosition === 'static' || currentPosition === '') {
-      wrapper.style.position = 'relative';
-    }
-
-    // Create and add the icon element
-    try {
-      const iconElement = createIconElement(appId);
-      wrapper.appendChild(iconElement);
-      log(`Added tag icon for app ${appId}`);
-    } catch (err) {
-      log(`Error adding tag icon for ${appId}:`, err);
-    }
+  // Try libraryAsset pattern
+  if (props.libraryAsset?.appid) {
+    return String(props.libraryAsset.appid);
   }
+
+  // Try app.appid
+  if (props.app?.appid) {
+    return String(props.app.appid);
+  }
+
+  // Try children props
+  if (props.children?.props?.appid) {
+    return String(props.children.props.appid);
+  }
+
+  // Steam Deck specific patterns
+  if (props.appId) {
+    return String(props.appId);
+  }
+
+  if (props.data?.appId) {
+    return String(props.data.appId);
+  }
+
+  // Check for game ID in various formats
+  if (props.gameId) {
+    return String(props.gameId);
+  }
+
+  if (props.game?.id) {
+    return String(props.game.id);
+  }
+
+  return null;
 }
 
-/**
- * Process all game images currently in the DOM
- */
-function processAllGameImages(): void {
-  // Find all library game cover images
-  const images = document.querySelectorAll<HTMLImageElement>(
-    'img[src*="/assets/"][src*="/library_600x900.jpg"]'
-  );
-
-  log(`Found ${images.length} game cover images`);
-
-  images.forEach(img => {
-    processGameImage(img);
-  });
-}
 
 /**
- * Clean up icons (remove from DOM)
+ * Find and patch game tiles in the React tree
  */
-function cleanupIcons(): void {
-  const icons = document.querySelectorAll('.game-progress-tracker-icon');
-  icons.forEach(icon => {
-    icon.remove();
-  });
+function findAndPatchGameTiles(tree: any): any {
+  if (!tree) return tree;
 
-  // Reset processed flags
-  const images = document.querySelectorAll<HTMLImageElement>('img[data-tag-processed]');
-  images.forEach(img => {
-    delete img.dataset.tagProcessed;
-  });
-}
+  try {
+    // Check if current node is a game tile
+    if (tree?.props) {
+      const appId = getAppIdFromProps(tree.props);
 
-/**
- * Set up mutation observer to handle dynamically loaded games
- */
-function setupMutationObserver(): MutationObserver {
-  const observer = new MutationObserver((mutations) => {
-    let hasNewImages = false;
+      if (appId && !patchedComponents.has(tree)) {
+        log(`Found potential game tile with appId ${appId}`);
 
-    for (const mutation of mutations) {
-      // Check added nodes for images
-      mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          const element = node as Element;
+        // Be more aggressive - patch anything with an appId
+        // Don't require image confirmation since React components might not have rendered yet
+        patchedComponents.add(tree);
 
-          // Check if it's an image or contains images
-          if (element.tagName === 'IMG') {
-            const img = element as HTMLImageElement;
-            if (img.src.includes('/assets/') && img.src.includes('/library_600x900.jpg')) {
-              hasNewImages = true;
-              processGameImage(img);
-            }
-          } else {
-            // Check for images within the added element
-            const images = element.querySelectorAll<HTMLImageElement>(
-              'img[src*="/assets/"][src*="/library_600x900.jpg"]'
-            );
-            if (images.length > 0) {
-              hasNewImages = true;
-              images.forEach(processGameImage);
-            }
-          }
+        // Track patch count
+        if (!(window as any).__gameProgressTrackerPatchCount) {
+          (window as any).__gameProgressTrackerPatchCount = 0;
         }
-      });
+        (window as any).__gameProgressTrackerPatchCount++;
+
+        log(`Patching game tile for app ${appId} (patch #${(window as any).__gameProgressTrackerPatchCount})`);
+
+        // Wrap the component with our icon
+        return (
+          <div key={`gpt-${appId}`} style={{ position: 'relative', display: 'contents' }}>
+            {tree}
+            <LibraryTagIcon appId={appId} />
+          </div>
+        );
+      }
     }
 
-    if (hasNewImages) {
-      log('New game images detected and processed');
+    // Recursively process children
+    if (tree?.props?.children) {
+      if (Array.isArray(tree.props.children)) {
+        tree.props.children = tree.props.children.map(findAndPatchGameTiles);
+      } else {
+        tree.props.children = findAndPatchGameTiles(tree.props.children);
+      }
     }
-  });
 
-  // Start observing the body for changes
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-  });
-
-  return observer;
-}
-
-let currentObserver: MutationObserver | null = null;
-
-/**
- * Initialize library grid patching for a specific route
- */
-function initializeLibraryPatching(): void {
-  log('Initializing library grid patching');
-
-  // Preload all tags for better performance
-  preloadAllTags().then(() => {
-    log('Tags preloaded');
-
-    // Process existing images
-    processAllGameImages();
-
-    // Set up observer for new images
-    if (currentObserver) {
-      currentObserver.disconnect();
-    }
-    currentObserver = setupMutationObserver();
-  });
-}
-
-/**
- * Clean up when leaving library routes
- */
-function cleanupLibraryPatching(): void {
-  log('Cleaning up library grid patching');
-
-  if (currentObserver) {
-    currentObserver.disconnect();
-    currentObserver = null;
+    return tree;
+  } catch (err) {
+    log('Error in findAndPatchGameTiles:', err);
+    return tree;
   }
-
-  cleanupIcons();
 }
 
 /**
- * Patch library routes to add tag icons
+ * Patch library routes to add tag icons using React tree patching
  */
 function patchLibraryGrid() {
-  log('Setting up library grid patch');
+  log('Setting up library grid patch with React tree patching');
+
+  // Preload tags once at startup
+  preloadAllTags().then(() => {
+    log('Tags preloaded for library grid');
+  }).catch(err => {
+    log('Error preloading tags:', err);
+  });
 
   // Patch multiple library routes
+  // Note: Steam Deck uses /routes/library instead of /library/home
   const libraryRoutes = [
+    '/routes/library',
+    '/routes/library/home',
+    '/routes/library/collection/:collection',
     '/library/home',
     '/library/collection/:collection',
     '/library',
   ];
 
-  const patches: Array<() => void> = [];
+  const unpatchers: Array<any> = [];  // RoutePatch type
 
   libraryRoutes.forEach(route => {
     const unpatch = routerHook.addPatch(
@@ -262,39 +168,128 @@ function patchLibraryGrid() {
       (routeProps: any) => {
         log(`Route patch triggered for ${route}`);
 
-        // Wait a bit for the library to render
-        setTimeout(() => {
-          initializeLibraryPatching();
-        }, 500);
+        try {
+          // Find the route props with renderFunc
+          const renderFuncContainer = findInReactTree(routeProps, (x: any) => x?.renderFunc);
 
-        // Clean up when navigating away
-        const originalComponentWillUnmount = routeProps.componentWillUnmount;
-        routeProps.componentWillUnmount = function() {
-          cleanupLibraryPatching();
-          if (originalComponentWillUnmount) {
-            originalComponentWillUnmount.call(this);
+          if (renderFuncContainer) {
+            log(`Found renderFunc for ${route}`);
+
+            // Create a patcher that will modify the React tree
+            const patchHandler = createReactTreePatcher(
+              [
+                // Try multiple strategies to find the game components
+                (tree: any) => {
+                  log(`Searching React tree for library components in ${route}`);
+
+                  // Strategy 1: Look for grid containers
+                  let found = findInReactTree(
+                    tree,
+                    (x: any) => {
+                      if (x?.props?.className) {
+                        const className = String(x.props.className).toLowerCase();
+                        return className.includes('grid') ||
+                               className.includes('library') ||
+                               className.includes('collection') ||
+                               className.includes('gamelist') ||
+                               className.includes('appportrait');
+                      }
+                      return false;
+                    }
+                  );
+
+                  if (found) {
+                    log('Found container via className strategy');
+                    return found;
+                  }
+
+                  // Strategy 2: Look for arrays of game components
+                  found = findInReactTree(
+                    tree,
+                    (x: any) => {
+                      if (Array.isArray(x?.props?.children) && x.props.children.length > 0) {
+                        const hasGameTiles = x.props.children.some((child: any) => {
+                          const appId = getAppIdFromProps(child?.props);
+                          if (appId) {
+                            log(`Found game tile array with app ${appId}`);
+                            return true;
+                          }
+                          return false;
+                        });
+                        return hasGameTiles;
+                      }
+                      return false;
+                    }
+                  );
+
+                  if (found) {
+                    log('Found container via game tile array strategy');
+                    return found;
+                  }
+
+                  // Strategy 3: Just return the tree and try to patch everything
+                  log('No specific container found, will patch entire tree');
+                  return tree;
+                }
+              ],
+              (_: Array<Record<string, unknown>>, ret?: ReactElement) => {
+                if (!ret) return ret;
+
+                log(`Patching React tree for ${route}`);
+
+                // Process the entire tree to find and patch game tiles
+                const patchedTree = findAndPatchGameTiles(ret);
+
+                // Count how many patches we applied
+                const patchCount = (window as any).__gameProgressTrackerPatchCount || 0;
+                log(`Total patches applied so far: ${patchCount}`);
+
+                return patchedTree;
+              }
+            );
+
+            afterPatch(renderFuncContainer, "renderFunc", patchHandler);
+            log(`Patch handler attached to renderFunc for ${route}`);
+          } else {
+            log(`No renderFunc found for ${route}, trying alternative approach`);
+
+            // Alternative: try to patch componentDidMount or other lifecycle methods
+            if (routeProps?.componentDidMount) {
+              const originalDidMount = routeProps.componentDidMount;
+              routeProps.componentDidMount = function(...args: any[]) {
+                log(`ComponentDidMount triggered for ${route}`);
+                const result = originalDidMount?.apply(this, args);
+
+                // Try to patch after mount
+                setTimeout(() => {
+                  log('Attempting post-mount patching');
+                  // This is where we'd need to access the component's rendered output
+                  // which is challenging without renderFunc
+                }, 100);
+
+                return result;
+              };
+            }
           }
-        };
+        } catch (error) {
+          log(`Error patching route ${route}:`, error);
+        }
 
         return routeProps;
       }
     );
 
-    patches.push(unpatch);
+    unpatchers.push(unpatch);
   });
 
-  // Also try to initialize immediately if we're already on a library page
-  if (window.location.href.includes('/library')) {
-    setTimeout(() => {
-      initializeLibraryPatching();
-    }, 1000);
-  }
+  log(`Registered ${unpatchers.length} route patches`);
 
   // Return cleanup function
   return () => {
     log('Removing library grid patches');
-    cleanupLibraryPatching();
-    patches.forEach(unpatch => unpatch());
+    unpatchers.forEach(unpatch => unpatch());
+    // WeakSet doesn't have clear() method - just create a new one if needed
+    // The old one will be garbage collected when no longer referenced
   };
 }
 
