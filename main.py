@@ -301,12 +301,15 @@ class Plugin:
             new_tag = await Plugin.calculate_auto_tag(self, appid)
             logger.info(f"  Calculated tag: {new_tag or 'none'}")
 
-            # Update if changed or doesn't exist
+            # Update if changed, doesn't exist, or forcing reset from manual
             if new_tag:
                 current_tag_value = current_tag.get('tag') if current_tag else None
-                if new_tag != current_tag_value:
+                is_currently_manual = current_tag.get('is_manual', False) if current_tag else False
+
+                # Update if: tag changed, no existing tag, or resetting from manual (force=True)
+                if new_tag != current_tag_value or (force and is_currently_manual):
                     await self.db.set_tag(appid, new_tag, is_manual=False)
-                    logger.info(f"  -> Tag set: {new_tag}")
+                    logger.info(f"  -> Tag set: {new_tag} (reset_manual={force and is_currently_manual})")
 
             return await self.db.get_tag(appid) or {}
 
