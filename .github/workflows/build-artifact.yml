@@ -3,7 +3,7 @@ name: Build Plugin Artifact
 on:
   push:
     branches:
-      - main
+      - '**'  # Run on all branches
 
 permissions:
   contents: read
