@@ -1,326 +1,174 @@
 /**
- * Library Grid Patching
- * Adds tag icons to game covers in the library grid view
- * Uses React tree patching approach (like detail pages) instead of DOM manipulation
+ * Library Grid Patcher - TabsHook exploration version
+ *
+ * Logs everything about Decky's tabsHook to understand cross-context capabilities
  */
 
-import {
-  afterPatch,
-  findInReactTree,
-  createReactTreePatcher
-} from '@decky/ui';
 import { routerHook } from '@decky/api';
-import React, { ReactElement } from 'react';
-import { LibraryTagIcon, preloadAllTags } from '../components/LibraryTagIcon';
+import { call } from '@decky/api';
 
-// Debug logging helper
-const log = (msg: string, data?: any) => {
-  const logMsg = `[GameProgressTracker][patchLibraryGrid] ${msg}`;
+// Comprehensive logging function
+const log = (context: string, message: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+  const logMsg = `[GPT][${timestamp}][${context}] ${message}`;
+
   if (data !== undefined) {
     console.log(logMsg, data);
+    // Also log to backend for persistent logging
+    call('log_frontend', { message: logMsg, data: JSON.stringify(data) }).catch(() => {});
   } else {
     console.log(logMsg);
+    call('log_frontend', { message: logMsg }).catch(() => {});
   }
 };
 
-// Cache to track which components we've already patched
-const patchedComponents = new WeakSet();
-
 /**
- * Extract app ID from various possible props locations
+ * Main patch function - explores tabsHook and logs everything
  */
-function getAppIdFromProps(props: any): string | null {
-  if (!props) return null;
+export default function patchLibraryGrid() {
+  log('Init', '🚀 Starting library grid patcher - TabsHook exploration');
 
-  // Try direct appid prop
-  if (props.appid) {
-    return String(props.appid);
-  }
+  // Explore what's available in Decky
+  const exploreDeckyAPIs = () => {
+    log('Explore', '🔍 Exploring Decky APIs...');
 
-  // Try data.appid (common pattern)
-  if (props.data?.appid) {
-    return String(props.data.appid);
-  }
-
-  // Try overview.appid
-  if (props.overview?.appid) {
-    return String(props.overview.appid);
-  }
-
-  // Try libraryAsset pattern
-  if (props.libraryAsset?.appid) {
-    return String(props.libraryAsset.appid);
-  }
-
-  // Try app.appid
-  if (props.app?.appid) {
-    return String(props.app.appid);
-  }
-
-  // Try children props
-  if (props.children?.props?.appid) {
-    return String(props.children.props.appid);
-  }
-
-  // Steam Deck specific patterns
-  if (props.appId) {
-    return String(props.appId);
-  }
-
-  if (props.data?.appId) {
-    return String(props.data.appId);
-  }
-
-  // Check for game ID in various formats
-  if (props.gameId) {
-    return String(props.gameId);
-  }
-
-  if (props.game?.id) {
-    return String(props.game.id);
-  }
-
-  return null;
-}
-
-
-/**
- * Find and patch game tiles in the React tree
- */
-function findAndPatchGameTiles(tree: any): any {
-  if (!tree) return tree;
-
-  try {
-    // Check if current node is a game tile
-    if (tree?.props) {
-      const appId = getAppIdFromProps(tree.props);
-
-      if (appId && !patchedComponents.has(tree)) {
-        log(`Found potential game tile with appId ${appId}`);
-
-        // Be more aggressive - patch anything with an appId
-        // Don't require image confirmation since React components might not have rendered yet
-        patchedComponents.add(tree);
-
-        // Track patch count
-        if (!(window as any).__gameProgressTrackerPatchCount) {
-          (window as any).__gameProgressTrackerPatchCount = 0;
-        }
-        (window as any).__gameProgressTrackerPatchCount++;
-
-        log(`Patching game tile for app ${appId} (patch #${(window as any).__gameProgressTrackerPatchCount})`);
-
-        // Wrap the component with our icon
-        return (
-          <div key={`gpt-${appId}`} style={{ position: 'relative', display: 'contents' }}>
-            {tree}
-            <LibraryTagIcon appId={appId} />
-          </div>
-        );
-      }
+    // Check for DeckyPluginLoader
+    if (!(window as any).DeckyPluginLoader) {
+      log('Explore', '❌ DeckyPluginLoader not found!');
+      return;
     }
 
-    // Recursively process children
-    if (tree?.props?.children) {
-      if (Array.isArray(tree.props.children)) {
-        tree.props.children = tree.props.children.map(findAndPatchGameTiles);
-      } else {
-        tree.props.children = findAndPatchGameTiles(tree.props.children);
-      }
-    }
+    const decky = (window as any).DeckyPluginLoader;
+    log('Explore', '✅ DeckyPluginLoader found', {
+      keys: Object.keys(decky),
+      hasTabsHook: !!decky.tabsHook
+    });
 
-    return tree;
-  } catch (err) {
-    log('Error in findAndPatchGameTiles:', err);
-    return tree;
-  }
-}
+    // Deep explore tabsHook
+    if (decky.tabsHook) {
+      const tabsHook = decky.tabsHook;
+      log('TabsHook', '📋 Found tabsHook!', {
+        type: typeof tabsHook,
+        keys: Object.keys(tabsHook)
+      });
 
-/**
- * Patch library routes to add tag icons using React tree patching
- */
-function patchLibraryGrid() {
-  log('Setting up library grid patch with React tree patching');
+      // Explore each property/method in tabsHook
+      Object.keys(tabsHook).forEach(key => {
+        const value = tabsHook[key];
+        const valueType = typeof value;
 
-  // Preload tags once at startup
-  preloadAllTags().then(() => {
-    log('Tags preloaded for library grid');
-  }).catch(err => {
-    log('Error preloading tags:', err);
-  });
+        if (valueType === 'function') {
+          log('TabsHook', `  Method: ${key}()`, {
+            argCount: value.length,
+            name: value.name || 'anonymous'
+          });
 
-  // Patch multiple library routes
-  // Note: Steam Deck uses /routes/library with tab variations
-  const libraryRoutes = [
-    '/routes/library',
-    '/routes/library/tab/:tab',  // This is what we're seeing: /routes/library/tab/GreatOnDeck
-    '/routes/library/home',
-    '/routes/library/collection/:collection',
-    '/library/home',
-    '/library/collection/:collection',
-    '/library',
-  ];
+          // Try to get function source
+          try {
+            const src = value.toString();
+            log('TabsHook', `    ${key} source preview:`, src.substring(0, 300));
+          } catch (e) {
+            log('TabsHook', `    Could not get source for ${key}`);
+          }
 
-  const unpatchers: Array<any> = [];  // RoutePatch type
-
-  libraryRoutes.forEach(route => {
-    log(`Registering patch for route: ${route}`);
-
-    const unpatch = routerHook.addPatch(
-      route,
-      (routeProps: any) => {
-        log(`🎯 Route patch TRIGGERED for ${route}`);
-
-        try {
-          // Find the route props with renderFunc
-          const renderFuncContainer = findInReactTree(routeProps, (x: any) => x?.renderFunc);
-
-          if (renderFuncContainer) {
-            log(`✅ Found renderFunc for ${route}`);
-
-            // Create a patcher that will modify the React tree
-            const patchHandler = createReactTreePatcher(
-              [
-                // Try multiple strategies to find the game components
-                (tree: any) => {
-                  log(`Searching React tree for library components in ${route}`);
-
-                  // Strategy 1: Look for grid containers
-                  let found = findInReactTree(
-                    tree,
-                    (x: any) => {
-                      if (x?.props?.className) {
-                        const className = String(x.props.className).toLowerCase();
-                        return className.includes('grid') ||
-                               className.includes('library') ||
-                               className.includes('collection') ||
-                               className.includes('gamelist') ||
-                               className.includes('appportrait');
-                      }
-                      return false;
-                    }
-                  );
-
-                  if (found) {
-                    log('Found container via className strategy');
-                    return found;
-                  }
-
-                  // Strategy 2: Look for arrays of game components
-                  found = findInReactTree(
-                    tree,
-                    (x: any) => {
-                      if (Array.isArray(x?.props?.children) && x.props.children.length > 0) {
-                        const hasGameTiles = x.props.children.some((child: any) => {
-                          const appId = getAppIdFromProps(child?.props);
-                          if (appId) {
-                            log(`Found game tile array with app ${appId}`);
-                            return true;
-                          }
-                          return false;
-                        });
-                        return hasGameTiles;
-                      }
-                      return false;
-                    }
-                  );
-
-                  if (found) {
-                    log('Found container via game tile array strategy');
-                    return found;
-                  }
-
-                  // Strategy 3: Just return the tree and try to patch everything
-                  log('No specific container found, will patch entire tree');
-                  return tree;
-                }
-              ],
-              (_: Array<Record<string, unknown>>, ret?: ReactElement) => {
-                if (!ret) return ret;
-
-                log(`Patching React tree for ${route}`);
-
-                // Process the entire tree to find and patch game tiles
-                const patchedTree = findAndPatchGameTiles(ret);
-
-                // Count how many patches we applied
-                const patchCount = (window as any).__gameProgressTrackerPatchCount || 0;
-                log(`Total patches applied so far: ${patchCount}`);
-
-                return patchedTree;
-              }
-            );
-
-            afterPatch(renderFuncContainer, "renderFunc", patchHandler);
-            log(`✅ Patch handler attached to renderFunc for ${route}`);
-          } else {
-            log(`⚠️ No renderFunc found for ${route}, checking route structure...`);
-
-            // Log what we do have in routeProps
-            const propKeys = Object.keys(routeProps || {});
-            log(`Route props available: ${propKeys.join(', ')}`);
-
-            // Try different patching strategies based on what's available
-            if (routeProps?.component) {
-              log(`Found 'component' property, attempting component patching`);
-
-              const originalComponent = routeProps.component;
-              routeProps.component = function(...args: any[]) {
-                log(`Component render triggered for ${route}`);
-                const result = originalComponent?.apply(this, args);
-
-                // Try to patch the result
-                if (result) {
-                  return findAndPatchGameTiles(result);
-                }
-                return result;
-              };
-            } else if (routeProps?.render) {
-              log(`Found 'render' property, attempting render patching`);
-
-              const originalRender = routeProps.render;
-              routeProps.render = function(...args: any[]) {
-                log(`Render triggered for ${route}`);
-                const result = originalRender?.apply(this, args);
-
-                // Try to patch the result
-                if (result) {
-                  return findAndPatchGameTiles(result);
-                }
-                return result;
-              };
-            } else if (routeProps?.componentDidMount) {
-              log(`Found 'componentDidMount', attempting lifecycle patching`);
-
-              const originalDidMount = routeProps.componentDidMount;
-              routeProps.componentDidMount = function(...args: any[]) {
-                log(`ComponentDidMount triggered for ${route}`);
-                return originalDidMount?.apply(this, args);
-              };
-            } else {
-              log(`⚠️ No suitable patching point found for ${route}`);
+          // Try calling safe getter methods
+          if (key.toLowerCase().includes('get') || key.toLowerCase().includes('tabs')) {
+            try {
+              const result = value();
+              log('TabsHook', `    ${key}() returned:`, result);
+            } catch (e: any) {
+              log('TabsHook', `    ${key}() error:`, e?.message || e);
             }
           }
-        } catch (error) {
-          log(`Error patching route ${route}:`, error);
+        } else {
+          log('TabsHook', `  Property: ${key}`, {
+            type: valueType,
+            value: valueType === 'object' ? Object.keys(value || {}) : value
+          });
+        }
+      });
+    }
+
+    // Also explore SteamClient for tab-related methods
+    if ((window as any).SteamClient) {
+      const steamClient = (window as any).SteamClient;
+      const tabMethods = Object.keys(steamClient).filter(key =>
+        key.toLowerCase().includes('tab') ||
+        key.toLowerCase().includes('exec') ||
+        key.toLowerCase().includes('inject') ||
+        key.toLowerCase().includes('browser')
+      );
+
+      if (tabMethods.length > 0) {
+        log('SteamClient', '🎮 Found tab-related SteamClient methods:', tabMethods);
+      }
+    }
+  };
+
+  // Set up route patches
+  const libraryRoutes = [
+    '/library',
+    '/library/home',
+    '/library/tab/:tab',
+    '/routes/library',
+    '/routes/library/tab/:tab'
+  ];
+
+  const patches: any[] = [];
+
+  libraryRoutes.forEach(route => {
+    try {
+      const unpatch = routerHook.addPatch(route, (routeProps: any) => {
+        log('Route', `📍 Route triggered: ${route}`);
+
+        // Log route props structure
+        if (routeProps) {
+          log('Route', 'Route props keys:', Object.keys(routeProps));
+
+          if (routeProps.children) {
+            log('Route', 'Children info:', {
+              type: typeof routeProps.children.type,
+              hasProps: !!routeProps.children.props,
+              propKeys: routeProps.children.props ? Object.keys(routeProps.children.props).slice(0, 10) : []
+            });
+
+            // Log children.type if it's a function
+            if (typeof routeProps.children.type === 'function') {
+              const funcStr = routeProps.children.type.toString();
+              log('Route', 'Children.type function preview:', funcStr.substring(0, 500));
+            }
+          }
         }
 
-        return routeProps;
-      }
-    );
+        // Re-explore APIs on each route trigger
+        setTimeout(() => {
+          log('Route', '🔄 Re-exploring APIs after route change...');
+          exploreDeckyAPIs();
+        }, 100);
 
-    unpatchers.push(unpatch);
+        return routeProps;
+      });
+
+      patches.push(unpatch);
+      log('Setup', `✅ Registered patch for ${route}`);
+    } catch (error) {
+      log('Setup', `❌ Failed to patch ${route}:`, error);
+    }
   });
 
-  log(`Registered ${unpatchers.length} route patches`);
+  // Initial exploration
+  log('Init', '🔍 Running initial API exploration...');
+  exploreDeckyAPIs();
 
   // Return cleanup function
   return () => {
-    log('Removing library grid patches');
-    unpatchers.forEach(unpatch => unpatch());
-    // WeakSet doesn't have clear() method - just create a new one if needed
-    // The old one will be garbage collected when no longer referenced
+    log('Cleanup', '🧹 Removing library grid patches...');
+    patches.forEach(unpatch => {
+      try {
+        unpatch();
+      } catch (e) {
+        log('Cleanup', 'Error during cleanup:', e);
+      }
+    });
   };
 }
-
-export default patchLibraryGrid;
