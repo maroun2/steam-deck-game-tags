@@ -1,10 +1,9 @@
 /**
- * Library Grid Patching
- * Adds tag icons to game covers in the library grid view
- * Uses React tree patching approach (like detail pages) instead of DOM manipulation
+ * Library Grid Patcher - TabsHook exploration version
+ *
+ * Logs everything about Decky's tabsHook to understand cross-context capabilities
  */
 /**
- * Patch library routes to add tag icons using React tree patching
+ * Main patch function - explores tabsHook and logs everything
  */
-declare function patchLibraryGrid(): () => void;
-export default patchLibraryGrid;
+export default function patchLibraryGrid(): () => void;
